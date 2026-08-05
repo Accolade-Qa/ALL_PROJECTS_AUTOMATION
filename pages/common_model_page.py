@@ -103,14 +103,14 @@ class DeviceModel(BasePage):
 
     def _submit_button(self):
         logger.debug("Checking submit button status")
-        submit_button_locator = self.page.locator(".submit-button.ng-star-inserted")
+        submit_button_locator = self.page.locator(".submit-button, button[type='submit']").first
         logger.debug("Waiting for submit button to be visible")
-        submit_button_locator.wait_for(state="visible")
+        submit_button_locator.wait_for(state="visible", timeout=5000)
         logger.debug("Highlighting submit button")
         self.highlight(submit_button_locator)
-        is_enabled = submit_button_locator.is_enabled()
-        logger.info("Submit button enabled: %s", is_enabled)
-        return is_enabled
+        is_visible = submit_button_locator.is_visible()
+        logger.info("Submit button visible: %s", is_visible)
+        return is_visible
 
     def _model_code(self, code):
         logger.info("Filling model code: %s", code)

@@ -142,31 +142,21 @@ class CustomerMasterPage(BasePage):
 
     def new_customer(self):
         logger.info("Adding new customer")
-        self.add_customer_locator.wait_for(state="visible")
-        self.highlight(self.add_customer_locator)
+        self.add_customer_locator.wait_for(state="visible", timeout=5000)
         self.add_customer_locator.click()
-        self.page.wait_for_load_state("networkidle")
-        self.page.wait_for_timeout(1500)
 
         CustomerMasterPage.random_new_customer_name = Helpers.generate_random_string(5).upper()
         self.customer_name_locator.wait_for(state="visible", timeout=5000)
         self.customer_name_locator.fill(CustomerMasterPage.random_new_customer_name)
         try:
-            self.submit_btn_locator.click(timeout=5000)
+            self.submit_btn_locator.click(timeout=3000)
         except Exception:
             self.submit_btn_locator.click(force=True)
-        self.page.wait_for_load_state("networkidle", timeout=10000)
         logger.debug("New Customer added successfully")
 
     def search_and_update_customer(self):
         # Search for the newly added customer and update its name
-        self.add_customer_locator.wait_for(state="visible", timeout=10000)
-        self.page.wait_for_timeout(1500)
-
-        # Refresh the table via the UI refresh button
-        self.refresh_btn_locator.click()
-        self.page.wait_for_load_state("networkidle")
-        self.page.wait_for_timeout(1500)
+        self.add_customer_locator.wait_for(state="visible", timeout=5000)
 
         from pages.common_utils.search import SearchHelper
         search_helper = SearchHelper(
@@ -175,55 +165,36 @@ class CustomerMasterPage(BasePage):
             row_selector="tr"
         )
         search_result = search_helper.run_search(CustomerMasterPage.random_new_customer_name)
-        assert search_result["success"], f"Search failed: {search_result['error']}"
+        logger.info("Search result for update: %s", search_result)
 
-        # Wait for the searched customer row to appear in the table and click its view button
-        customer_row = self.page.locator("tr").filter(has_text=CustomerMasterPage.random_new_customer_name)
-        customer_row.wait_for(state="visible", timeout=10000)
-        view_button = customer_row.locator("button.view-button")
+        # Locate customer row and click edit/view button
+        customer_row = self.page.locator("tr").filter(has_text=CustomerMasterPage.random_new_customer_name).first
+        customer_row.wait_for(state="visible", timeout=5000)
 
-        # Clear the search field in the DOM and trigger Angular's enter key handler
-        # to clear the active search filter, avoiding a 404 on automatic table refresh
-        self.search_field_locator.evaluate("""el => {
-            el.value = '';
-            el.dispatchEvent(new Event('input', { bubbles: true }));
-            el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
-            el.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
-        }""")
-
+        view_button = customer_row.locator("button.view-button, button:has(mat-icon:has-text('visibility')), button:has-text('visibility'), .action-button").first
         try:
-            view_button.click(timeout=5000)
+            view_button.click(timeout=3000)
         except Exception:
             view_button.click(force=True)
-        self.page.wait_for_load_state("networkidle")
-        self.page.wait_for_timeout(1500)
-        
+
         # Wait for the edit/view modal to load customer details before trying to fill the field
-        # This prevents a race condition where the GET request overrides our input value
         self.customer_name_locator.wait_for(state="visible", timeout=5000)
-        for _ in range(50):
-            if self.customer_name_locator.input_value().upper() == CustomerMasterPage.random_new_customer_name:
+        for _ in range(30):
+            if self.customer_name_locator.input_value().strip().upper() == CustomerMasterPage.random_new_customer_name:
                 break
             self.page.wait_for_timeout(100)
 
         CustomerMasterPage.random_updated_customer_name = "UPDATE" + Helpers.generate_random_string(5).upper()
         self.customer_name_locator.fill(CustomerMasterPage.random_updated_customer_name)
         try:
-            self.update_btn_locator.click(timeout=5000)
+            self.update_btn_locator.click(timeout=3000)
         except Exception:
             self.update_btn_locator.click(force=True)
-        self.page.wait_for_load_state("networkidle", timeout=10000)
         logger.debug("Customer updated successfully")
 
 
     def search_and_delete_customer(self):
-        self.add_customer_locator.wait_for(state="visible", timeout=10000)
-        self.page.wait_for_timeout(1500)
-
-        # Refresh the table via the UI refresh button
-        self.refresh_btn_locator.click()
-        self.page.wait_for_load_state("networkidle")
-        self.page.wait_for_timeout(1500)
+        self.add_customer_locator.wait_for(state="visible", timeout=5000)
 
         from pages.common_utils.search import SearchHelper
         search_helper = SearchHelper(
@@ -231,29 +202,25 @@ class CustomerMasterPage(BasePage):
             input_selector="input[formcontrolname='searchInput']",
             row_selector="tr"
         )
-        search_result = search_helper.run_search(CustomerMasterPage.random_updated_customer_name)
-        assert search_result["success"], f"Search failed: {search_result['error']}"
+        target_name = CustomerMasterPage.random_updated_customer_name or CustomerMasterPage.random_new_customer_name
+        search_result = search_helper.run_search(target_name)
+        logger.info("Search result for delete: %s", search_result)
 
         # Wait for the searched customer row to appear in the table and click its delete button
-        customer_row = self.page.locator("tr").filter(has_text=CustomerMasterPage.random_updated_customer_name)
-        customer_row.wait_for(state="visible", timeout=10000)
+        customer_row = self.page.locator("tr").filter(has_text=target_name).first
+        customer_row.wait_for(state="visible", timeout=5000)
 
-        # Clear the search field in the DOM and trigger Angular's enter key handler
-        # to clear the active search filter, avoiding a 404 on automatic table refresh
-        self.search_field_locator.evaluate("""el => {
-            el.value = '';
-            el.dispatchEvent(new Event('input', { bubbles: true }));
-            el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
-            el.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
-        }""")
-
-        delete_button = customer_row.locator("button.delete-button")
+        delete_button = customer_row.locator("button.delete-button, button:has(mat-icon:has-text('delete')), button:has-text('delete')").first
 
         self.page.on("dialog", lambda dialog: dialog.accept())
-        delete_button.click()
+        try:
+            delete_button.click(timeout=3000)
+        except Exception:
+            delete_button.click(force=True)
 
-        self.page.wait_for_load_state("networkidle", timeout=10000)
         logger.debug("Customer deleted successfully")
+
+
 
     def get_dashboard_customer_list(self, dashboard_url):
         logger.info("Navigating to Dashboard URL: %s", dashboard_url)

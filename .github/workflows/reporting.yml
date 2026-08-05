@@ -104,8 +104,8 @@ jobs:
       - name: Run tests and generate reports
         continue-on-error: true
         run: |
-          EVENT_PROJECT=${{ github.event.client_payload.project || github.event.inputs.project || '' }}
-          EVENT_MARKER=${{ github.event.client_payload.marker || github.event.inputs.marker || '' }}
+          EVENT_PROJECT="${{ github.event.client_payload.project || github.event.inputs.project || '' }}"
+          EVENT_MARKER="${{ github.event.client_payload.marker || github.event.inputs.marker || '' }}"
 
           COMMIT_MSG="${{ github.event.head_commit.message }}"
           echo "Commit Message: $COMMIT_MSG"
@@ -127,11 +127,12 @@ jobs:
             fi
           fi
 
-          TARGET_REPORT_DIR=${{ env.TARGET_REPORT_DIR }}
+
+          TARGET_REPORT_DIR="${{ env.TARGET_REPORT_DIR }}"
           ARGS="--report-dir \"$TARGET_REPORT_DIR\""
 
           if [ -n "$EVENT_PROJECT" ]; then
-            ARGS="$ARGS --project $EVENT_PROJECT"
+            ARGS="$ARGS --project \"$EVENT_PROJECT\""
           fi
 
           if [ -n "$EVENT_MARKER" ]; then
@@ -139,6 +140,7 @@ jobs:
           elif [ -n "$CI" ]; then
             ARGS="$ARGS --marker smoke"
           fi
+
 
           echo "Executing: python utils/generate_reports.py $ARGS"
           eval python utils/generate_reports.py $ARGS

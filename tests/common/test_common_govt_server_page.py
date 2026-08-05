@@ -1125,9 +1125,16 @@ class TestGovtServerPage:
 
             locator.wait_for(state="visible")
 
+            expected_api_value = str(api_data.get(api_key, "")).strip()
+
+            if expected_api_value:
+                for _ in range(50):
+                    if locator.input_value().strip():
+                        break
+                    govt_server_page.page.wait_for_timeout(100)
+
             actual_ui_value = locator.input_value().strip()
 
-            expected_api_value = str(api_data.get(api_key, "")).strip()
 
             logger.debug(
                 "Validating field '%s' | " "Expected: '%s' | Actual: '%s'",

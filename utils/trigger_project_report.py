@@ -13,7 +13,9 @@ def parse_args():
     parser.add_argument("--token", required=True, help="GitHub token with repo access")
     parser.add_argument("--project", help="Target project name, e.g. lct")
     parser.add_argument("--marker", nargs="+", help="Pytest marker expression, e.g. api or smoke")
+
     parser.add_argument(
+
         "--report-dir",
         default="reports",
         help="Optional report output directory",

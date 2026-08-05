@@ -560,47 +560,65 @@ curl -X POST \
 
 Use the helper script `utils/trigger_project_report.py` to simplify GitHub dispatch calls.
 
-Example for `lct` smoke tests using repository_dispatch:
+#### How to Trigger with Different Branches (`--ref`)
 
-```bash
-python utils/trigger_project_report.py \
-  --owner Accolade-Qa \
-  --repo LCT_A4G_AUTO \
-  --token "$GITHUB_TOKEN" \
-  --project lct \
-  --marker smoke
-```
+Passing the `--ref <branch_name>` parameter tells the script to trigger `workflow_dispatch` on the specified Git branch or tag instead of the default `repository_dispatch`.
 
-Example for `atcu,lct` smoke tests using repository_dispatch:
+##### Parameter Reference:
 
-```bash
-python utils/trigger_project_report.py \
-  --owner Accolade-Qa \
-  --repo LCT_A4G_AUTO \
-  --token "$GITHUB_TOKEN" \
-  --projects atcu,lct \
-  --marker smoke
-```
+| Parameter | Required | Description |
+| :--- | :---: | :--- |
+| `--ref` | **Yes for custom branch** | Target Git branch or tag name (e.g., `atcu`, `main`, `feature/my-branch`) |
+| `--owner` | Yes | GitHub repository owner (e.g., `Accolade-Qa`) |
+| `--repo` | Yes | GitHub repository name (e.g., `LCT_A4G_AUTO`) |
+| `--token` | Yes | GitHub Personal Access Token (PAT) with `repo` permissions |
+| `--project` | Optional | Target project name (e.g., `atcu`, `lct`) |
+| `--marker` | Optional | Pytest marker expression (e.g., `smoke`, `regression`, `ui`) |
+| `--workflow` | Optional | Workflow file name (defaults to `reporting.yml`) |
 
-Example for `atcu` branch-specific workflow_dispatch (recommended when testing on `atcu` branch):
+##### PowerShell Examples (Windows):
 
-```bash
-python utils/trigger_project_report.py \
-  --owner Accolade-Qa \
-  --repo LCT_A4G_AUTO \
-  --token "$GITHUB_TOKEN" \
-  --project atcu \
-  --marker smoke \
-  --ref atcu
-```
+- Trigger on the `atcu` branch:
+  ```powershell
+  python utils/trigger_project_report.py --owner Accolade-Qa --repo LCT_A4G_AUTO --token "YOUR_GITHUB_TOKEN" --project atcu --marker smoke --ref atcu
+  ```
+
+- Trigger on a feature branch (e.g., `feature/ticket-dashboard-fix`):
+  ```powershell
+  python utils/trigger_project_report.py --owner Accolade-Qa --repo LCT_A4G_AUTO --token "YOUR_GITHUB_TOKEN" --project atcu --marker smoke --ref feature/ticket-dashboard-fix
+  ```
+
+##### Bash Examples (Linux/macOS):
+
+- Example for `lct` smoke tests using repository_dispatch (default branch):
+  ```bash
+  python utils/trigger_project_report.py \
+    --owner Accolade-Qa \
+    --repo LCT_A4G_AUTO \
+    --token "$GITHUB_TOKEN" \
+    --project lct \
+    --marker smoke
+  ```
+
+- Example for `atcu` branch-specific workflow_dispatch:
+  ```bash
+  python utils/trigger_project_report.py \
+    --owner Accolade-Qa \
+    --repo LCT_A4G_AUTO \
+    --token "$GITHUB_TOKEN" \
+    --project atcu \
+    --marker smoke \
+    --ref atcu
+  ```
 
 ### Common pitfalls
 
 - `repository_dispatch` only triggers workflows on the default branch.
-- `workflow_dispatch` can target a branch using `ref`.
+- `workflow_dispatch` can target a specific branch using `--ref`.
 - `project` and `projects` cannot be used together.
 - The GitHub token must be valid and have the correct scopes.
 - Do not share your personal token; use individual tokens or a secure service account.
+
 
 ### Summary
 

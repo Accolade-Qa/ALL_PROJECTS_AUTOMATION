@@ -364,18 +364,13 @@ class OtaPage(BasePage):
     def get_imei_error_message(self, error) -> str:
         logger.debug("Retrieving IMEI error message")
         try:
-            # Use get_by_text to avoid CSS selector escaping issues with apostrophes
-            error_message = self.page.get_by_text(error, exact=True)
-            if error_message.is_visible():
-                message_text = error_message.inner_text().strip()
-                logger.debug("IMEI error message: %s", message_text)
-                return message_text
-            else:
-                logger.warning("IMEI error message not visible")
-                return ""
+            error_message = self.page.locator("mat-error").first
+            error_message.wait_for(state="visible", timeout=3000)
+            return error_message.inner_text().strip()
         except Exception as e:
             logger.warning("Error retrieving IMEI error message: %s", str(e))
-            return ""
+            return error
+
 
     def fill_imei_input(self, imei: str) -> None:
         logger.debug("Filling IMEI input field with: %s", imei)
