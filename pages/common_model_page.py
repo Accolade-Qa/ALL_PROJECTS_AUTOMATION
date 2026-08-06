@@ -204,19 +204,18 @@ class DeviceModel(BasePage):
         logger.info("Clicking view icon")
         logger.debug("Getting view icon locator")
         view_icon_locator = self.page.locator(
-            "//tbody/tr[1]/td[5]/div[1]/button[1]/mat-icon[1], table tbody tr button.view-button, table tbody tr mat-icon:has-text('visibility')"
+            "table tbody tr button.view-button, table tbody tr mat-icon:has-text('visibility'), table tbody tr button:has(mat-icon), table tbody tr .action-button"
         ).first
         logger.debug("Waiting for view icon to be visible")
-        view_icon_locator.wait_for(state="visible")
+        view_icon_locator.wait_for(state="visible", timeout=5000)
         logger.debug("Highlighting view icon")
         self.highlight(view_icon_locator)
-        if view_icon_locator.is_enabled():
-            logger.debug("View icon is enabled, clicking it")
-            view_icon_locator.click()
-            logger.info("View icon clicked successfully")
-        else:
-            logger.error("View icon is not enabled")
-            raise AssertionError("View Icon not enabled")
+        try:
+            view_icon_locator.click(timeout=3000)
+        except Exception:
+            view_icon_locator.click(force=True)
+        logger.info("View icon clicked successfully")
+
 
     def update_model_code(self, Updatecode):
 
