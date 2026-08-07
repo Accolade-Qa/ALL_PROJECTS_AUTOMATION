@@ -197,5 +197,10 @@ DEVICE_ACTIVITY_LOG_URL = _get(
     "http://lct-a4g-qa.accoladeelectronics.com/device-activity-log",
 )
 
+CREATE_NEW_OTA_BATCH = _get(
+    "CREATE_NEW_OTA_BATCH",
+    "https://aepl-tcu4g-qa.accoladeelectronics.com/ota-batch-create",
+)
+
 # Expected permission counts per project (can be overridden in project YAML)
 EXPECTED_PERMISSION_COUNT = int(_get("EXPECTED_PERMISSION_COUNT", 16))

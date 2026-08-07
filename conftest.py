@@ -258,6 +258,7 @@ def project_config():
         "role_group_url": config_module.ROLE_GROUP_URL,
         "device_details_url": config_module.DEVICE_DETAILS_URL,
         "ota_url": config_module.OTA_URL,
+        "create_new_ota_batch": config_module.CREATE_NEW_OTA_BATCH,
         "production_page_url": config_module.PRODUCTION_PAGE_URL,
         "create_production_url": config_module.CREATE_PRODUCTION_URL,
         "add_production_url": config_module.ADD_PRODUCTION_URL,
@@ -833,6 +834,52 @@ def atcu_ticket_dashboard_page(page, project_config):
     return ticket_dashboard_page
 
 
+@pytest.fixture
+def atcu_ota_page(page, project_config):
+    from pages.atcu.atcu_ota_page import AtcuOtaPage
+
+    ota_page = AtcuOtaPage(page)
+    base = BasePage(page)
+    ota_url = project_config.get("ota_batch_report_url") or project_config.get("ota_url") or "https://aepl-tcu4g-qa.accoladeelectronics.com/Ota-batch-report"
+    base.navigate_to(ota_url)
+    logger.info("ATCU OTA page fixture ready at %s", ota_url)
+    return ota_page
+
+
+@pytest.fixture
+def atcu_create_ota_batch_page(page, project_config):
+    from pages.atcu.atcu_ota_page import AtcuOtaPage
+
+    ota_page = AtcuOtaPage(page)
+    base = BasePage(page)
+    create_url = project_config.get("create_new_ota_batch") or "https://aepl-tcu4g-qa.accoladeelectronics.com/ota-batch-create"
+    base.navigate_to(create_url)
+    logger.info("ATCU Create OTA Batch page fixture ready at %s", create_url)
+    return ota_page
+
+
+@pytest.fixture
+def atcu_manual_ota_page(page, project_config):
+    from pages.atcu.atcu_ota_page import AtcuOtaPage
+
+    ota_page = AtcuOtaPage(page)
+    base = BasePage(page)
+    manual_url = project_config.get("manual_ota_url") or "https://aepl-tcu4g-qa.accoladeelectronics.com/manual-ota"
+    base.navigate_to(manual_url)
+    logger.info("ATCU Manual OTA page fixture ready at %s", manual_url)
+    return ota_page
+
+
+@pytest.fixture
+def atcu_ota_master_page(page, project_config):
+    from pages.atcu.atcu_ota_page import AtcuOtaPage
+
+    ota_page = AtcuOtaPage(page)
+    base = BasePage(page)
+    master_url = project_config.get("ota_master_url") or "https://aepl-tcu4g-qa.accoladeelectronics.com/ota-master"
+    base.navigate_to(master_url)
+    logger.info("ATCU OTA Master page fixture ready at %s", master_url)
+    return ota_page
 
 
 

@@ -1,10 +1,5 @@
-from playwright.sync_api import expect
-from pages.common_utils.search import SearchHelper
-from pages.common_utils.table_section import TableSection
-from utils.helpers import Helpers as helper
 from utils.logger import get_logger
 
-import re
 import pytest
 
 logger = get_logger(__name__)
