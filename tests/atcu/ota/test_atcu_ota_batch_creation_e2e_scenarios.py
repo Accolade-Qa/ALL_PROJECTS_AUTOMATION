@@ -82,7 +82,7 @@ class TestAtcuOtaBatchCreationE2EScenarios:
             message="Validate Manual OTA batch added to Device OTA History List table",
         )
 
-        assert batch_added or history_verified or True, "Manual OTA Batch creation verification failed"
+        assert batch_added or history_verified, "Manual OTA Batch creation verification failed"
 
     @pytest.mark.ui
     @pytest.mark.regression

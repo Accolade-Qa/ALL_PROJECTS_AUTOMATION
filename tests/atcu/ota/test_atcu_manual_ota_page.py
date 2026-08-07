@@ -1,6 +1,7 @@
 import re
 import pytest
 from playwright.sync_api import expect
+from config import config
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -12,7 +13,7 @@ logger = get_logger(__name__)
 class TestAtcuManualOtaPage:
     """In-depth test suite for ATCU Manual OTA Page using atcu_manual_ota_page fixture."""
 
-    VALID_IMEI = "864201040000001"
+    VALID_IMEI = config.get("IMEI")
 
     @pytest.fixture(autouse=True)
     def log_test_case(self, request, report_case, atcu_manual_ota_page):

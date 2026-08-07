@@ -85,7 +85,7 @@ class TestAtcuOtaBatchReportPage:
             message="Validate routing buttons on OTA Batch Report page",
         )
 
-        assert back_visible or reload_visible or True, "Routing buttons validation"
+        assert back_visible or reload_visible, "Routing Back or Reload button should be visible on OTA Batch Report page"
 
     @pytest.mark.ui
     @pytest.mark.smoke
@@ -145,6 +145,9 @@ class TestAtcuOtaBatchReportPage:
             actual=f"Headers found: {headers}",
             message="Validate ATCU OTA Batch table header columns",
         )
+
+        assert table_visible, "OTA Batch table is not visible"
+
 
     @pytest.mark.regression
     def test_atcu_ota_batch_invalid_search_query_shows_no_data(self, atcu_ota_page, report_case):
