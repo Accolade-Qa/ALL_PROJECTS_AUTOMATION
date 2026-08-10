@@ -258,6 +258,7 @@ def project_config():
         "role_group_url": config_module.ROLE_GROUP_URL,
         "device_details_url": config_module.DEVICE_DETAILS_URL,
         "ota_url": config_module.OTA_URL,
+        "manual_ota_url" : config_module.MANUAL_OTA_URL,
         "create_new_ota_batch": config_module.CREATE_NEW_OTA_BATCH,
         "production_page_url": config_module.PRODUCTION_PAGE_URL,
         "create_production_url": config_module.CREATE_PRODUCTION_URL,

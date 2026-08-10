@@ -202,5 +202,9 @@ CREATE_NEW_OTA_BATCH = _get(
     "https://aepl-tcu4g-qa.accoladeelectronics.com/ota-batch-create",
 )
 
+MANUAL_OTA_URL = _get(
+    "MANUAL_OTA_URL",
+    "https://aepl-tcu4g-qa.accoladeelectronics.com/manual-ota",
+)
 # Expected permission counts per project (can be overridden in project YAML)
 EXPECTED_PERMISSION_COUNT = int(_get("EXPECTED_PERMISSION_COUNT", 16))

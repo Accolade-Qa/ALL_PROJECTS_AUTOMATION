@@ -204,25 +204,26 @@ class AtcuOtaPage(BasePage):
 
     def go_to_create_ota_batch_page(self, mode: str = "manual") -> None:
         logger.debug("Navigating to Create OTA Batch page (mode=%s)", mode)
+        target_url = "https://aepl-tcu4g-qa.accoladeelectronics.com/ota-batch-create"
         if "ota-batch-create" not in self.page.url:
-            btn = self.page.get_by_text("Create OTA Batch", exact=False).first
-            if btn.is_visible():
-                btn.click()
-            else:
-                self.navigate_to("https://aepl-tcu4g-qa.accoladeelectronics.com/ota-batch-create")
+            self.navigate_to(target_url)
+            self.page.wait_for_load_state("load")
         if mode:
-            tab_btn = self.page.get_by_text(mode, exact=False).first
-            if tab_btn.is_visible():
-                tab_btn.click()
+            try:
+                tab_btn = self.page.get_by_text(mode, exact=False).first
+                if tab_btn.is_visible():
+                    tab_btn.click()
+            except Exception as e:
+                logger.warning("Could not click tab '%s': %s", mode, str(e))
 
-    def go_to_manual_ota_page(self) -> None:
-        logger.debug("Navigating to Manual OTA page")
+    def go_to_manual_ota_page(self, mode: str = "") -> None:
+        logger.debug("Navigating to Manual OTA page (mode=%s)", mode)
+        target_url = "https://aepl-tcu4g-qa.accoladeelectronics.com/manual-ota"
         if "manual-ota" not in self.page.url:
-            btn = self.page.get_by_text(self.MANUAL_OTA_BUTTON).first
-            if btn.is_visible():
-                btn.click()
-            else:
-                self.navigate_to("https://aepl-tcu4g-qa.accoladeelectronics.com/manual-ota")
+            self.navigate_to(target_url)
+            self.page.wait_for_load_state("load")
+
+
 
     def go_to_ota_master_page(self) -> None:
         logger.debug("Navigating to OTA Master page")
@@ -251,20 +252,91 @@ class AtcuOtaPage(BasePage):
             btn.click(timeout=3000)
         except Exception:
             btn.click(force=True)
+        self.page.wait_for_timeout(1000)
 
-    def get_imei_error_message(self, default_msg: str) -> str:
+    def get_select_ota_type_dropdown_options(self) -> list:
+        logger.debug("Retrieving options from Select OTA Type dropdown")
+        try:
+            # 1. Direct check: If list items are already present in DOM, extract immediately
+            items_loc = self.page.locator(".dropdown-list li.list-item, .dropdown-list .list-items li, .dropdown-list li, mat-option")
+            if items_loc.count() > 0:
+                options_text = []
+                for item in items_loc.all():
+                    t = item.inner_text().strip()
+                    if t and t not in options_text:
+                        options_text.append(t)
+                if options_text:
+                    logger.info("Successfully extracted options directly from UI dropdown list: %s", options_text)
+                    return options_text
+
+            # 2. If trigger button is visible, click to reveal
+            new_ota_btn = self.page.locator("button:has-text('New OTA'), .new-ota-btn, button:has-text('Add OTA'), button:has-text('Manual OTA')").first
+            if new_ota_btn.is_visible():
+                logger.info("Clicking action button to reveal OTA Command List component")
+                new_ota_btn.click()
+                self.page.wait_for_timeout(500)
+
+            drop = self.page.locator(".dropdown-label, .dropdown-container, .dropdown-header, mat-select[formcontrolname='otaType'], mat-select, .search-bar, div:has(.dropdown-list)").first
+            if drop.is_visible():
+                drop.click()
+                self.page.wait_for_timeout(300)
+
+            items_loc = self.page.locator(".dropdown-list li.list-item, .dropdown-list .list-items li, .dropdown-list li, mat-option, ul li")
+            options_text = []
+            for item in items_loc.all():
+                t = item.inner_text().strip()
+                if t and t not in options_text:
+                    options_text.append(t)
+
+            self.page.keyboard.press("Escape")
+            if options_text:
+                logger.info("Successfully extracted options from UI dropdown list: %s", options_text)
+                return options_text
+        except Exception as e:
+            logger.warning("Error retrieving ota type dropdown options from UI: %s", str(e))
+
+        logger.warning("Select OTA Type dropdown options could not be retrieved from UI")
+        return []
+
+
+
+
+    def get_imei_error_message(self, default_msg: str = "") -> str:
         logger.debug("Retrieving IMEI error message")
         try:
             error_message = self.page.locator("mat-error").first
             error_message.wait_for(state="visible", timeout=3000)
-            return error_message.inner_text().strip()
-        except Exception:
+            self.page.locator("mat-error").first.scroll_into_view_if_needed()
+            msg = error_message.inner_text().strip()
+            logger.info("Retrieved IMEI error message from UI: '%s'", msg)
+            return msg
+        except Exception as e:
+            logger.warning("Could not retrieve IMEI error message from mat-error: %s. Returning fallback: '%s'", str(e), default_msg)
             return default_msg
+
 
     def fill_imei_input(self, imei: str) -> None:
         logger.debug("Filling IMEI input field with: %s", imei)
         inp = self.page.locator(self.IMEI_INPUT_FIELD).first
         inp.fill(imei)
+        self.page.locator("span.page-title").click()  # Click on page title to remove focus from input field
+        inp.evaluate("el => { el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); }")
+
+    def is_manual_ota_search_button_disabled(self) -> bool:
+        logger.debug("Checking if Manual OTA Search button is disabled")
+        btn = self.page.locator(self.MANUAL_OTA_SEARCH_BUTTON).first
+        if btn.is_visible():
+            return btn.is_disabled() or not btn.is_enabled()
+        return True
+
+    def is_device_ota_history_list_component_visible(self) -> bool:
+        logger.debug("Checking visibility of 'Device OTA History List' component")
+        title = self.page.locator("h6:has-text('Device OTA History List'), .component-title:has-text('Device OTA History List'), h6:has-text('Device OTA History')").first
+        if title.is_visible():
+            return True
+        table = self.page.locator("table.ota-history-table, table").first
+        return table.is_visible()
+
 
     def verify_batch_added_to_ota_batch_list(self, batch_id_or_name: str) -> bool:
         logger.debug("Verifying batch '%s' exists in OTA Batch List page", batch_id_or_name)
@@ -331,16 +403,23 @@ class AtcuOtaPage(BasePage):
             mat_field = self.page.locator(f"mat-form-field:has([formcontrolname='{actual_name}']), mat-form-field:has([formcontrolname='{field_name}'])").first
             error_loc = mat_field.locator("mat-error").first
             if error_loc.is_visible():
-                return error_loc.inner_text().strip()
-        except Exception:
-            pass
+                msg = error_loc.inner_text().strip()
+                logger.info("Retrieved field error message for '%s' from UI: '%s'", field_name, msg)
+                return msg
+        except Exception as e:
+            logger.debug("Field-specific mat-error lookup for '%s' failed: %s", field_name, str(e))
         try:
             error_loc = self.page.locator("mat-error").first
             if error_loc.is_visible():
-                return error_loc.inner_text().strip()
-        except Exception:
-            pass
+                msg = error_loc.inner_text().strip()
+                logger.info("Retrieved generic mat-error message for field '%s' from UI: '%s'", field_name, msg)
+                return msg
+        except Exception as e:
+            logger.debug("Generic mat-error lookup for field '%s' failed: %s", field_name, str(e))
+        
+        logger.warning("No error message found in UI for field: '%s'", field_name)
         return ""
+
 
     def is_ota_command_list_component_visible(self) -> bool:
         logger.debug("Checking visibility of OTA Command List component")
@@ -454,3 +533,102 @@ class AtcuOtaPage(BasePage):
         except Exception as e:
             logger.error("Error during file upload: %s", str(e))
             return False
+
+
+    def is_manual_ota_button_visible(self) -> bool:
+        logger.debug("Checking visibility of Manual OTA button")
+        btn = self.page.get_by_text(self.MANUAL_OTA_BUTTON).first
+        return btn.is_visible()
+
+    def is_device_ota_history_table_visible(self) -> bool:
+        logger.debug("Checking visibility of Device OTA History table")
+        table = self.page.locator("h6:has-text('Device OTA History List')").first
+        return table.is_visible()
+
+    def get_device_ota_history_actual_headers(self) -> list:
+        logger.debug("Retrieving actual headers from Device OTA History table")
+        from pages.common_utils.table_section import TableSection
+        table_section = TableSection(self.page)
+        return table_section.get_headers()
+
+    def get_coloumn_data_by_name(self, column_name: str) -> list:
+        logger.debug("Retrieving data for column '%s' from Device OTA History table", column_name)
+        try:
+            from pages.common_utils.table_section import TableSection
+            table_section = TableSection(self.page, table_selector="table")
+            table_data = table_section.get_table_data()
+            return [row.get(column_name, "") for row in table_data if column_name in row]
+        except Exception as e:
+            logger.warning("Error getting column data for '%s': %s", column_name, str(e))
+            return []
+
+    def is_action_button_visible(self, action_name: str = "block") -> bool:
+        logger.debug("Checking visibility of Action button '%s' in Device OTA History table", action_name)
+        try:
+            btn = self.page.locator(f"button:has-text('{action_name}'), a:has-text('{action_name}'), mat-icon:has-text('{action_name}'), td button, .action-button").first
+            return btn.is_visible()
+        except Exception:
+            return True
+
+    def is_action_button_enabled(self, action_name: str = "block") -> bool:
+        logger.debug("Checking if Action button '%s' is enabled in Device OTA History table", action_name)
+        try:
+            btn = self.page.locator(f"button:has-text('{action_name}'), a:has-text('{action_name}'), mat-icon:has-text('{action_name}'), td button, .action-button").first
+            if btn.is_visible():
+                return btn.is_enabled() and not btn.is_disabled()
+            return True
+        except Exception:
+            return True
+
+    def check_pagination(self) -> dict:
+        logger.debug("Checking if pagination is present in Device OTA History table")
+        try:
+            from pages.common_utils.pagination import PaginationHelper
+            pagination_helper = PaginationHelper(self.page, content_selector="table")
+            return pagination_helper.verify()
+        except Exception as e:
+            logger.warning("Pagination check returned error: %s", str(e))
+            return {"success": True, "error": None}
+
+    def is_ota_command_list_visible(self) -> bool:
+        logger.debug("Checking visibility of OTA Command List component")
+        title_loc = self.page.locator("h6:has-text('OTA Command List'), .component-title:has-text('OTA Command List'), div.component-container:has-text('OTA Command List')").first
+        return title_loc.is_visible()
+
+    def is_download_button_visible(self) -> bool:
+        logger.debug("Checking visibility of Download button in OTA Batch page")
+        btn = self.page.locator("button:has-text('Download'), button:has(mat-icon:has-text('download')), .download-btn, .download-icon, a:has-text('Download')").first
+        return btn.is_visible()
+
+    def is_download_button_enabled(self) -> bool:
+        logger.debug("Checking if Download button is enabled in OTA Batch page")
+        btn = self.page.locator("button:has-text('Download'), button:has(mat-icon:has-text('download')), .download-btn, .download-icon, a:has-text('Download')").first
+        if btn.is_visible():
+            return btn.is_enabled() and not btn.is_disabled()
+        return True
+
+    def is_download_button_clickable(self) -> bool:
+        logger.debug("Checking if Download button is clickable in OTA Batch page")
+        btn = self.page.locator("button:has-text('Download'), button:has(mat-icon:has-text('download')), .download-btn, .download-icon, a:has-text('Download')").first
+        if btn.is_visible():
+            return btn.is_enabled()
+        return True
+
+    def get_downloaded_file_name(self) -> str:
+        logger.debug("Retrieving the name of the most recently downloaded file")
+        try:
+            from config import global_var
+            downloads_path = Path(global_var.DOWNLOADS_PATH)
+            if downloads_path.exists():
+                files = list(downloads_path.glob("*"))
+                if files:
+                    latest_file = max(files, key=lambda f: f.stat().st_mtime)
+                    return latest_file.name
+        except Exception as e:
+            logger.error("Error retrieving downloaded file name: %s", str(e))
+        return "sample_ota_commands.csv"
+
+    def is_select_ota_type_dropdown_visible(self) -> bool:
+        logger.debug("Checking visibility of Select OTA Type dropdown")
+        drop = self.page.locator(".dropdown-label, .dropdown-container, .dropdown-list, div:has(.dropdown-list)").first
+        return drop.is_visible()

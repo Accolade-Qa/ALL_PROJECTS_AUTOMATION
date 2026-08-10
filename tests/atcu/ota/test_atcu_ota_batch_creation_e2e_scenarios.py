@@ -1,5 +1,5 @@
 import pytest
-from config import config
+from config.config import IMEI
 from utils.helpers import Helpers as helper
 from utils.logger import get_logger
 
@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 class TestAtcuOtaBatchCreationE2EScenarios:
     """Scenario 1: Validation of OTA Batch Creation via all 3 creation modes and verification in OTA Batch List page & Device OTA History List table."""
 
-    VALID_IMEI = config.get("imei")
+    VALID_IMEI = IMEI  # Fetching valid IMEI from configuration
 
     @pytest.fixture(autouse=True)
     def log_test_case(self, request, report_case):
