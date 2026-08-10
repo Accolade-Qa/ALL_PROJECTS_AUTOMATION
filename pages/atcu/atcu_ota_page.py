@@ -294,13 +294,13 @@ class AtcuOtaPage(BasePage):
     # --- Bulk OTA Form Helpers ---
     def fill_batch_name(self, name: str) -> None:
         logger.debug("Filling Batch Name input field with: '%s'", name)
-        inp = self.page.locator("input[formcontrolname='batchName'], input[placeholder*='Batch Name']").first
+        inp = self.page.locator("input[formcontrolname='name'], input[formcontrolname='batchName'], input[placeholder*='Batch Name']").first
         inp.fill(name)
         inp.evaluate("el => { el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); el.dispatchEvent(new Event('blur', { bubbles: true })); }")
 
     def fill_batch_description(self, desc: str) -> None:
         logger.debug("Filling Batch Description input field with: '%s'", desc)
-        inp = self.page.locator("input[formcontrolname='batchDescription'], textarea[formcontrolname='batchDescription'], input[placeholder*='Description']").first
+        inp = self.page.locator("input[formcontrolname='description'], input[formcontrolname='batchDescription'], input[placeholder*='Description']").first
         inp.fill(desc)
         inp.evaluate("el => { el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); el.dispatchEvent(new Event('blur', { bubbles: true })); }")
 
@@ -321,8 +321,14 @@ class AtcuOtaPage(BasePage):
 
     def get_field_error_message(self, field_name: str) -> str:
         logger.debug("Retrieving error message for field: %s", field_name)
+        actual_name = field_name
+        if field_name == "batchName":
+            actual_name = "name"
+        elif field_name == "batchDescription":
+            actual_name = "description"
+
         try:
-            mat_field = self.page.locator(f"mat-form-field:has([formcontrolname='{field_name}'])").first
+            mat_field = self.page.locator(f"mat-form-field:has([formcontrolname='{actual_name}']), mat-form-field:has([formcontrolname='{field_name}'])").first
             error_loc = mat_field.locator("mat-error").first
             if error_loc.is_visible():
                 return error_loc.inner_text().strip()
@@ -351,13 +357,40 @@ class AtcuOtaPage(BasePage):
     def is_select_all_checkbox_enabled(self) -> bool:
         logger.debug("Checking if Select All checkbox is enabled")
         chk = self.page.locator("input[type='checkbox']").first
+        try:
+            chk.wait_for(state="visible", timeout=5000)
+        except Exception as e:
+            logger.warning("Wait for Select All checkbox visible timed out: %s", str(e))
         return chk.is_visible() and chk.is_enabled()
+
+
+    def search_and_select_ota_command(self, command_name: str = "*GET#IMEI#") -> bool:
+        logger.debug("Searching for OTA Command '%s' using SearchHelper and selecting its checkbox", command_name)
+        try:
+            search_helper = SearchHelper(
+                page=self.page,
+                input_selector="input[placeholder='Search and Press Enter'], input[formcontrolname='searchInput'], input[placeholder*='Search']",
+                row_selector="mat-checkbox, label, input[type='checkbox']"
+            )
+            try:
+                search_helper.run_search(command_name)
+            except Exception as se:
+                logger.warning("SearchHelper run_search completed with notice: %s", str(se))
+
+            chk = self.page.locator(f"mat-checkbox:has-text('{command_name}') input, label:has-text('{command_name}'), table input[type='checkbox'], input[type='checkbox']").first
+            if chk.is_visible():
+                chk.click()
+                logger.info("Successfully selected command checkbox for '%s'", command_name)
+                return True
+        except Exception as e:
+            logger.error("Error searching/selecting command '%s': %s", command_name, str(e))
+        return False
+
 
     def select_first_command_checkbox(self) -> None:
         logger.debug("Selecting first command checkbox in OTA Command List")
-        chk = self.page.locator("table input[type='checkbox'], mat-checkbox input, input[type='checkbox']").first
-        if chk.is_visible():
-            chk.click()
+        self.search_and_select_ota_command("*GET#IMEI#")
+
 
     def click_set_batch_button(self) -> None:
         logger.debug("Clicking Set Batch button")
@@ -391,5 +424,33 @@ class AtcuOtaPage(BasePage):
             inp.fill(value)
             inp.evaluate("el => { el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); }")
 
+    def upload_file(self, file_path: str = "") -> bool:
+        logger.debug("Uploading file for Bulk OTA")
+        try:
+            if not file_path:
+                file_path = str(Path(__file__).parent.parent.parent / "test_data" / "atcu" / "bulk ota sample template.csv")
 
+            csv_path = Path(file_path)
+            if not csv_path.exists():
+                logger.error("Sample CSV file not found at: %s", csv_path)
+                return False
 
+            file_str = str(csv_path)
+            file_name = csv_path.name
+
+            # Step 1: Populate native hidden file input (input[type='file'])
+            file_input = self.page.locator("input[type='file']").first
+            if file_input.count() > 0:
+                file_input.set_input_files(file_str)
+                file_input.evaluate("el => { el.dispatchEvent(new Event('change', { bubbles: true })); el.dispatchEvent(new Event('input', { bubbles: true })); }")
+
+            # Step 2: Set text value on Angular formcontrolname="fileName" input
+            file_name_input = self.page.locator("input[formcontrolname='fileName']").first
+            if file_name_input.count() > 0:
+                file_name_input.evaluate(f"el => {{ el.removeAttribute('readonly'); el.value = '{file_name}'; el.dispatchEvent(new Event('input', {{ bubbles: true }})); el.dispatchEvent(new Event('change', {{ bubbles: true }})); }}")
+
+            logger.info("File successfully uploaded/attached: %s", file_name)
+            return True
+        except Exception as e:
+            logger.error("Error during file upload: %s", str(e))
+            return False

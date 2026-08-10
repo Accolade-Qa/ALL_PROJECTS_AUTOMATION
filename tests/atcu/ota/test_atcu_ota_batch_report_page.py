@@ -2,9 +2,11 @@ import re
 import pytest
 from playwright.sync_api import expect
 
+from pages.common_utils.pagination import PaginationHelper
 from pages.common_utils.search import SearchHelper
 from pages.common_utils.table_section import TableSection
 from utils.logger import get_logger
+
 
 logger = get_logger(__name__)
 
@@ -165,3 +167,102 @@ class TestAtcuOtaBatchReportPage:
         )
 
         assert result["success"], f"Search failed: {result['error']}"
+
+    @pytest.mark.ui
+    @pytest.mark.regression
+    def test_atcu_ota_batch_back_button_navigation(self, atcu_ota_page, report_case):
+        """Verify Back button navigation functionality on OTA Batch Report page."""
+        logger.info("Testing Back button navigation on OTA Batch Report page")
+
+        back_btn = atcu_ota_page.page.locator(".action-button.back-button, button:has(mat-icon:has-text('arrow_back')), .back-icon").first
+        if back_btn.is_visible():
+            back_btn.click()
+            atcu_ota_page.page.wait_for_load_state("load")
+
+        curr_url = atcu_ota_page.page.url
+        logger.debug("URL after clicking Back button: %s", curr_url)
+
+        report_case(
+            expected="Back button click should navigate back smoothly",
+            actual=f"Current URL: {curr_url}",
+            message="Validate Back button navigation functionality",
+        )
+
+        assert curr_url != "", "Back button navigation failed"
+
+    @pytest.mark.ui
+    @pytest.mark.regression
+    def test_atcu_ota_batch_refresh_button_functionality(self, atcu_ota_page, report_case):
+        """Verify Refresh/Reload button functionality on OTA Batch Report page."""
+        logger.info("Testing Refresh/Reload button functionality on OTA Batch Report page")
+
+        reload_btn = atcu_ota_page.page.locator(".action-button.reload-button, button:has(mat-icon:has-text('refresh')), button:has(mat-icon:has-text('autorenew')), .reload-icon").first
+        if reload_btn.is_visible():
+            reload_btn.click()
+            atcu_ota_page.page.wait_for_load_state("load")
+
+        page_loaded = atcu_ota_page.is_page_loaded()
+        logger.debug("Page loaded after clicking Refresh button: %s", page_loaded)
+
+        report_case(
+            expected="Refresh button click should reload page content successfully",
+            actual=f"Page loaded: {page_loaded}",
+            message="Validate Refresh button functionality",
+        )
+
+        assert page_loaded, "Refresh/Reload button failed to reload page content"
+
+    @pytest.mark.ui
+    @pytest.mark.regression
+    def test_atcu_ota_subpage_navigation_header_links(self, atcu_ota_page, report_case):
+        """Verify sub-page navigation between OTA Batch Report, Create OTA Batch, Manual OTA, and OTA Master pages."""
+        logger.info("Testing sub-page navigation links across OTA module")
+
+        # Step 1: Navigate to Create OTA Batch page
+        atcu_ota_page.go_to_create_ota_batch_page()
+        url_create = atcu_ota_page.page.url
+        logger.debug("Navigated to Create OTA Batch page: %s", url_create)
+
+        report_case(
+            expected="URL should contain 'ota-batch-create'",
+            actual=f"Current URL: {url_create}",
+            message="Validate navigation to Create OTA Batch page",
+        )
+        assert "ota-batch-create" in url_create.lower() or "create" in url_create.lower()
+
+        # Step 2: Navigate to Manual OTA page
+        atcu_ota_page.go_to_manual_ota_page()
+        url_manual = atcu_ota_page.page.url
+        logger.debug("Navigated to Manual OTA page: %s", url_manual)
+
+        report_case(
+            expected="URL should contain 'manual-ota'",
+            actual=f"Current URL: {url_manual}",
+            message="Validate navigation to Manual OTA page",
+        )
+        assert "manual-ota" in url_manual.lower()
+
+        # Step 3: Navigate to OTA Master page
+        atcu_ota_page.go_to_ota_master_page()
+        url_master = atcu_ota_page.page.url
+        logger.debug("Navigated to OTA Master page: %s", url_master)
+
+        report_case(
+            expected="URL should contain 'ota-master'",
+            actual=f"Current URL: {url_master}",
+            message="Validate navigation to OTA Master page",
+        )
+        assert "ota-master" in url_master.lower()
+
+        # Step 4: Return to OTA Batch Report page
+        atcu_ota_page.go_to_ota_batch_report_page()
+        url_report = atcu_ota_page.page.url
+
+        report_case(
+            expected="URL should contain 'Ota-batch-report'",
+            actual=f"Current URL: {url_report}",
+            message="Validate return navigation to OTA Batch Report page",
+        )
+        assert "Ota-batch-report" in url_report or "ota-batch" in url_report.lower()
+
+

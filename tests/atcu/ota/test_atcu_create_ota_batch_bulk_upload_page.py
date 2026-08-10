@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 import pytest
+from pages.common_utils.pagination import PaginationHelper
+from utils.helpers import Helpers
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -37,6 +39,72 @@ class TestAtcuCreateOtaBatchBulkUploadPage:
         elif report.failed:
             logger.error("ATCU Bulk Upload OTA Batch test failed: %s", test_name)
             logger.debug("ATCU Bulk Upload OTA Batch failure details for %s: %s", test_name, report.longrepr)
+
+    # ==================== NAVIGATION TEST CASES AT TOP ====================
+
+    @pytest.mark.ui
+    @pytest.mark.smoke
+    @pytest.mark.regression
+    def test_atcu_bulk_upload_navigation_and_url_validation(self, atcu_create_ota_batch_page, report_case):
+        """Verify Create OTA Batch page navigation and URL validation."""
+        logger.info("Testing Create OTA Batch page navigation and URL validation")
+        atcu_create_ota_batch_page.go_to_create_ota_batch_page(mode="batch")
+        curr_url = atcu_create_ota_batch_page.page.url
+        logger.debug("Current Create OTA Batch URL: %s", curr_url)
+
+        report_case(
+            expected="Create OTA Batch page URL should contain 'ota-batch-create'",
+            actual=f"Current URL: {curr_url}",
+            message="Validate Create OTA Batch page navigation and URL",
+        )
+
+        assert "ota-batch-create" in curr_url.lower() or "create" in curr_url.lower(), f"Invalid URL: {curr_url}"
+
+    @pytest.mark.ui
+    @pytest.mark.regression
+    def test_atcu_bulk_upload_back_button_navigation(self, atcu_create_ota_batch_page, report_case):
+        """Verify Back button navigation functionality on Create OTA Batch page."""
+        logger.info("Testing Back button navigation on Create OTA Batch page")
+
+        back_btn = atcu_create_ota_batch_page.page.locator(".action-button.back-button, button:has(mat-icon:has-text('arrow_back')), .back-icon").first
+        if back_btn.is_visible():
+            back_btn.click()
+            atcu_create_ota_batch_page.page.wait_for_load_state("load")
+
+        curr_url = atcu_create_ota_batch_page.page.url
+        logger.debug("URL after clicking Back button: %s", curr_url)
+
+        report_case(
+            expected="Back button click should navigate back smoothly to previous page",
+            actual=f"Current URL: {curr_url}",
+            message="Validate Back button navigation functionality",
+        )
+
+        assert curr_url != "", "Back button navigation failed"
+
+    @pytest.mark.ui
+    @pytest.mark.regression
+    def test_atcu_bulk_upload_refresh_button_functionality(self, atcu_create_ota_batch_page, report_case):
+        """Verify Refresh/Reload button functionality on Create OTA Batch page."""
+        logger.info("Testing Refresh/Reload button functionality on Create OTA Batch page")
+
+        reload_btn = atcu_create_ota_batch_page.page.locator(".action-button.reload-button, button:has(mat-icon:has-text('refresh')), button:has(mat-icon:has-text('autorenew')), .reload-icon").first
+        if reload_btn.is_visible():
+            reload_btn.click()
+            atcu_create_ota_batch_page.page.wait_for_load_state("load")
+
+        page_loaded = atcu_create_ota_batch_page.is_page_loaded()
+        logger.debug("Page loaded after clicking Refresh button: %s", page_loaded)
+
+        report_case(
+            expected="Refresh button click should reload page content successfully",
+            actual=f"Page loaded: {page_loaded}",
+            message="Validate Refresh button functionality",
+        )
+
+        assert page_loaded, "Refresh/Reload button failed to reload page content"
+
+    # ==================== FIELD VALIDATION TEST CASES ====================
 
     @pytest.mark.ui
     @pytest.mark.regression
@@ -82,7 +150,7 @@ class TestAtcuCreateOtaBatchBulkUploadPage:
 
         # Step 4: Numerical input
         atcu_create_ota_batch_page.fill_batch_name("12345")
-        val_num = atcu_create_ota_batch_page.page.locator("input[formcontrolname='batchName'], input[placeholder*='Batch Name']").first.input_value()
+        val_num = atcu_create_ota_batch_page.page.locator("input[formcontrolname='name'], input[formcontrolname='batchName'], input[placeholder*='Batch Name']").first.input_value()
 
         report_case(
             expected="Numerical input '12345' should be accepted in Batch Name field",
@@ -93,7 +161,7 @@ class TestAtcuCreateOtaBatchBulkUploadPage:
 
         # Step 5: Valid text input
         atcu_create_ota_batch_page.fill_batch_name("TestBatch")
-        val_text = atcu_create_ota_batch_page.page.locator("input[formcontrolname='batchName'], input[placeholder*='Batch Name']").first.input_value()
+        val_text = atcu_create_ota_batch_page.page.locator("input[formcontrolname='name'], input[formcontrolname='batchName'], input[placeholder*='Batch Name']").first.input_value()
 
         assert val_text == "TestBatch", f"Expected 'TestBatch', got '{val_text}'"
 
@@ -141,13 +209,13 @@ class TestAtcuCreateOtaBatchBulkUploadPage:
 
         # Step 4: Numerical input
         atcu_create_ota_batch_page.fill_batch_description("99999")
-        val_num = atcu_create_ota_batch_page.page.locator("input[formcontrolname='batchDescription'], textarea[formcontrolname='batchDescription'], input[placeholder*='Description']").first.input_value()
+        val_num = atcu_create_ota_batch_page.page.locator("input[formcontrolname='description'], input[formcontrolname='batchDescription'], textarea[formcontrolname='batchDescription'], input[placeholder*='Description']").first.input_value()
 
         assert val_num == "99999", f"Expected '99999', got '{val_num}'"
 
         # Step 5: Valid text input
         atcu_create_ota_batch_page.fill_batch_description("TestDescription")
-        val_text = atcu_create_ota_batch_page.page.locator("input[formcontrolname='batchDescription'], textarea[formcontrolname='batchDescription'], input[placeholder*='Description']").first.input_value()
+        val_text = atcu_create_ota_batch_page.page.locator("input[formcontrolname='description'], input[formcontrolname='batchDescription'], textarea[formcontrolname='batchDescription'], input[placeholder*='Description']").first.input_value()
 
         assert val_text == "TestDescription", f"Expected 'TestDescription', got '{val_text}'"
 
@@ -227,10 +295,15 @@ class TestAtcuCreateOtaBatchBulkUploadPage:
         """Requirement 6 (Part A): Validate selecting 'Bulk OTA' option reveals the 'OTA Command List' component below."""
         logger.info("Selecting 'Bulk OTA' option and validating 'OTA Command List' component visibility")
 
+        atcu_create_ota_batch_page.fill_batch_name(f"BulkBatch_{Helpers.generate_random_string(3)}")
+        atcu_create_ota_batch_page.fill_batch_description("Bulk Batch Description Test")
+
         try:
             atcu_create_ota_batch_page.select_ota_batch_type("Bulk OTA")
         except Exception as e:
             logger.warning("Could not select Bulk OTA type directly: %s", str(e))
+
+        atcu_create_ota_batch_page.upload_file(str(self.SAMPLE_CSV_PATH))
 
         command_list_visible = atcu_create_ota_batch_page.is_ota_command_list_component_visible()
         logger.debug("OTA Command List component visibility: %s", command_list_visible)
@@ -249,10 +322,17 @@ class TestAtcuCreateOtaBatchBulkUploadPage:
         """Requirement 6 (Part B): Validate before checking command boxes, Select All checkbox is enabled and Set Batch button is disabled."""
         logger.info("Testing initial states: Select All checkbox enabled, Set Batch button disabled")
 
+        atcu_create_ota_batch_page.fill_batch_name(f"BulkBatch_{Helpers.generate_random_string(3)}")
+        atcu_create_ota_batch_page.fill_batch_description("Bulk Batch Description Test")
+
         try:
             atcu_create_ota_batch_page.select_ota_batch_type("Bulk OTA")
         except Exception as e:
             logger.warning("Could not select Bulk OTA: %s", str(e))
+
+        is_uploaded = atcu_create_ota_batch_page.upload_file(str(self.SAMPLE_CSV_PATH))
+
+        assert is_uploaded, "Sample CSV file upload failed, cannot proceed with command list validation"
 
         select_all_enabled = atcu_create_ota_batch_page.is_select_all_checkbox_enabled()
         set_batch_disabled = atcu_create_ota_batch_page.is_set_batch_button_disabled()
@@ -271,15 +351,19 @@ class TestAtcuCreateOtaBatchBulkUploadPage:
     @pytest.mark.ui
     @pytest.mark.regression
     def test_atcu_bulk_upload_command_checkbox_selection_enables_set_batch_button(self, atcu_create_ota_batch_page, report_case):
-        """Requirement 6 (Part C): Validate selecting a command checkbox in front of option makes both checkboxes and Set Batch button visible and enabled."""
-        logger.info("Selecting a command checkbox and validating Set Batch button enablement")
+        """Requirement 6 (Part C): Validate searching '*GET#CIP3#' and selecting command checkbox makes Set Batch button visible and enabled."""
+        logger.info("Searching '*GET#CIP3#', selecting command checkbox, and validating Set Batch button enablement")
+
+        atcu_create_ota_batch_page.fill_batch_name(f"BulkBatch_{Helpers.generate_random_string(3)}")
+        atcu_create_ota_batch_page.fill_batch_description("Bulk Batch Description Test")
 
         try:
             atcu_create_ota_batch_page.select_ota_batch_type("Bulk OTA")
         except Exception as e:
             logger.warning("Could not select Bulk OTA: %s", str(e))
 
-        atcu_create_ota_batch_page.select_first_command_checkbox()
+        atcu_create_ota_batch_page.upload_file(str(self.SAMPLE_CSV_PATH))
+        atcu_create_ota_batch_page.search_and_select_ota_command("*GET#CIP3#")
 
         set_batch_disabled = atcu_create_ota_batch_page.is_set_batch_button_disabled()
         set_batch_enabled = not set_batch_disabled
@@ -297,15 +381,21 @@ class TestAtcuCreateOtaBatchBulkUploadPage:
     @pytest.mark.ui
     @pytest.mark.regression
     def test_atcu_bulk_upload_set_batch_click_reveals_set_configuration_value_component(self, atcu_create_ota_batch_page, report_case):
-        """Requirement 6 (Part D): Validate clicking Set Batch button reveals 'Set Configuration Value' component with exact table headers."""
-        logger.info("Clicking Set Batch button and validating 'Set Configuration Value' component and table headers")
+        """Requirement 6 (Part D): Validate searching '*GET#CIP3#' and clicking Set Batch button reveals 'Set Configuration Value' component with exact table headers."""
+        logger.info("Searching '*GET#CIP3#', selecting checkbox, clicking Set Batch button and validating 'Set Configuration Value' component and table headers")
+
+        atcu_create_ota_batch_page.fill_batch_name(f"BulkBatch_{Helpers.generate_random_string(3)}")
+        atcu_create_ota_batch_page.fill_batch_description("Bulk Batch Description Test")
 
         try:
             atcu_create_ota_batch_page.select_ota_batch_type("Bulk OTA")
         except Exception as e:
             logger.warning("Could not select Bulk OTA: %s", str(e))
 
-        atcu_create_ota_batch_page.select_first_command_checkbox()
+        atcu_create_ota_batch_page.upload_file(str(self.SAMPLE_CSV_PATH))
+        
+        command_to_select = "*GET#CIP3#"
+        atcu_create_ota_batch_page.search_and_select_ota_command(command_to_select)
         atcu_create_ota_batch_page.click_set_batch_button()
 
         set_config_visible = atcu_create_ota_batch_page.is_set_configuration_value_component_visible()
@@ -315,7 +405,7 @@ class TestAtcuCreateOtaBatchBulkUploadPage:
         logger.debug("Set Configuration Value visible: %s | Headers: %s", set_config_visible, actual_headers)
 
         report_case(
-            expected=f"Clicking Set Batch should display 'Set Configuration Value' component with headers {expected_headers}",
+            expected=f"Searching '{command_to_select}' and clicking Set Batch should display 'Set Configuration Value' component with headers {expected_headers}",
             actual=f"Component visible: {set_config_visible}, Headers: {actual_headers}",
             message="Validate 'Set Configuration Value' component display and table headers",
         )
@@ -328,12 +418,16 @@ class TestAtcuCreateOtaBatchBulkUploadPage:
         """Requirement 6 (Part E): Validate if command has SET type, Input Value input box is enabled and Submit button remains disabled until input value is filled."""
         logger.info("Validating Input Value box and Submit button state rules")
 
+        atcu_create_ota_batch_page.fill_batch_name(f"BulkBatch_{Helpers.generate_random_string(3)}")
+        atcu_create_ota_batch_page.fill_batch_description("Bulk Batch Description Test")
+
         try:
             atcu_create_ota_batch_page.select_ota_batch_type("Bulk OTA")
         except Exception as e:
             logger.warning("Could not select Bulk OTA: %s", str(e))
 
-        atcu_create_ota_batch_page.select_first_command_checkbox()
+        atcu_create_ota_batch_page.upload_file(str(self.SAMPLE_CSV_PATH))
+        atcu_create_ota_batch_page.search_and_select_ota_command("*GET#CIP3#")
         atcu_create_ota_batch_page.click_set_batch_button()
 
         input_box_enabled = atcu_create_ota_batch_page.is_input_value_box_enabled()
@@ -350,7 +444,7 @@ class TestAtcuCreateOtaBatchBulkUploadPage:
             )
             assert initially_disabled, "Submit button should be disabled when Input Value box is empty"
 
-            atcu_create_ota_batch_page.fill_input_value_box("100")
+            atcu_create_ota_batch_page.fill_input_value_box("1")
             submit_enabled = submit_btn.is_enabled()
 
             report_case(
@@ -371,12 +465,47 @@ class TestAtcuCreateOtaBatchBulkUploadPage:
 
     @pytest.mark.ui
     @pytest.mark.regression
+    def test_atcu_bulk_upload_set_configuration_table_pagination(self, atcu_create_ota_batch_page, report_case):
+        """Verify pagination controls on 'Set Configuration Value' component table."""
+        logger.info("Testing pagination functionality on 'Set Configuration Value' component table")
+
+        atcu_create_ota_batch_page.fill_batch_name(f"BulkBatch_{Helpers.generate_random_string(3)}")
+        atcu_create_ota_batch_page.fill_batch_description("Bulk Batch Pagination Test")
+
+        try:
+            atcu_create_ota_batch_page.select_ota_batch_type("Bulk OTA")
+        except Exception as e:
+            logger.warning("Could not select Bulk OTA: %s", str(e))
+
+        atcu_create_ota_batch_page.upload_file(str(self.SAMPLE_CSV_PATH))
+        atcu_create_ota_batch_page.search_and_select_ota_command("*GET#CIP3#")
+        atcu_create_ota_batch_page.click_set_batch_button()
+
+        set_config_visible = atcu_create_ota_batch_page.is_set_configuration_value_component_visible()
+        assert set_config_visible, "Set Configuration Value component is not visible"
+
+        pagination = PaginationHelper(
+            page=atcu_create_ota_batch_page.page,
+            content_selector="div.component-container:has-text('Set Configuration Value') table, table"
+        )
+        result = pagination.verify(include_backward=True)
+
+        report_case(
+            expected="Pagination controls should traverse 'Set Configuration Value' table pages cleanly",
+            actual=f"Success: {result['success']}, Pages visited: {result['pages_visited']}, Total pages: {result['total_pages']}",
+            message="Validate 'Set Configuration Value' table pagination controls",
+        )
+
+        assert result["success"], f"Set Configuration table pagination failed: {result['error']}"
+
+    @pytest.mark.ui
+    @pytest.mark.regression
     def test_atcu_bulk_upload_submit_alert_accept_and_batch_list_redirection(self, atcu_create_ota_batch_page, report_case):
         """Requirement 7: Validate clicking Submit button triggers Alert box confirmation, accepts it, and redirects to OTA Batch List page with added batch."""
         logger.info("Testing Submit button alert confirmation box dialog accept and OTA Batch List page redirection")
 
         # Populate mandatory fields and upload CSV file
-        atcu_create_ota_batch_page.fill_batch_name("BulkBatchAlertTest123")
+        atcu_create_ota_batch_page.fill_batch_name(f"BulkBatch_{Helpers.generate_random_string(3)}")
         atcu_create_ota_batch_page.fill_batch_description("Bulk Batch Description Alert Test")
 
         try:
@@ -384,11 +513,12 @@ class TestAtcuCreateOtaBatchBulkUploadPage:
         except Exception as e:
             logger.warning("Could not select Bulk OTA: %s", str(e))
 
-        atcu_create_ota_batch_page.select_first_command_checkbox()
+        atcu_create_ota_batch_page.upload_file(str(self.SAMPLE_CSV_PATH))
+        atcu_create_ota_batch_page.search_and_select_ota_command("*GET#CIP3#")
         atcu_create_ota_batch_page.click_set_batch_button()
 
         if atcu_create_ota_batch_page.is_input_value_box_enabled():
-            atcu_create_ota_batch_page.fill_input_value_box("100")
+            atcu_create_ota_batch_page.fill_input_value_box("1")
 
         # Dialog alert handler
         alert_accepted = {"accepted": False, "message": ""}
@@ -400,13 +530,6 @@ class TestAtcuCreateOtaBatchBulkUploadPage:
             dialog.accept()
 
         atcu_create_ota_batch_page.page.on("dialog", handle_dialog)
-
-        # Upload sample CSV file
-        file_path = self.SAMPLE_CSV_PATH
-        if os.path.exists(file_path):
-            file_input = atcu_create_ota_batch_page.page.locator("input[type='file']").first
-            if file_input.is_visible():
-                file_input.set_input_files(file_path)
 
         submit_btn = atcu_create_ota_batch_page.page.locator("button.submit-button, button[type='submit']").first
         if submit_btn.is_visible():

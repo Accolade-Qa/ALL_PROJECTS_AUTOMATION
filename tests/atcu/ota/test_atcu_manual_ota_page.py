@@ -2,7 +2,9 @@ import re
 import pytest
 from playwright.sync_api import expect
 from config import config
+from pages.common_utils.pagination import PaginationHelper
 from utils.logger import get_logger
+
 
 logger = get_logger(__name__)
 
@@ -364,12 +366,18 @@ class TestAtcuManualOtaPage:
     @pytest.mark.ui
     @pytest.mark.regression
     def test_atcu_manual_ota_history_pagination_validation(self, atcu_manual_ota_page, report_case):
-        """Verify pagination controls on OTA History component."""
+        """Verify pagination controls on OTA History component using PaginationHelper."""
         logger.info("Testing pagination on OTA History component")
         atcu_manual_ota_page.go_to_manual_ota_page()
 
+        pagination = PaginationHelper(atcu_manual_ota_page.page)
+        result = pagination.verify(include_backward=True)
+
         report_case(
             expected="Pagination controls should work on OTA History table",
-            actual="Pagination verified",
+            actual=f"Success: {result['success']}, Pages visited: {result['pages_visited']}, Total pages: {result['total_pages']}",
             message="Validate pagination on OTA History component",
         )
+
+        assert result["success"], f"Pagination failed: {result['error']}"
+

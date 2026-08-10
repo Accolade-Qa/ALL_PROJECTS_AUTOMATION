@@ -2,10 +2,12 @@ import re
 import pytest
 from playwright.sync_api import expect
 
+from pages.common_utils.pagination import PaginationHelper
 from pages.common_utils.search import SearchHelper
 from pages.common_utils.table_section import TableSection
 from utils.helpers import Helpers as helper
 from utils.logger import get_logger
+
 
 logger = get_logger(__name__)
 
@@ -330,3 +332,22 @@ class TestAtcuOtaMasterPage:
 
         btn = atcu_ota_master_page.page.locator(atcu_ota_master_page.SUBMIT_BUTTON).first
         assert btn.is_visible(), "Submit button should be visible"
+
+    @pytest.mark.ui
+    @pytest.mark.regression
+    def test_atcu_ota_master_table_pagination(self, atcu_ota_master_page, report_case):
+        """Verify pagination controls on OTA Master table using PaginationHelper."""
+        logger.info("Testing pagination functionality on OTA Master table")
+        atcu_ota_master_page.go_to_ota_master_page()
+
+        pagination = PaginationHelper(atcu_ota_master_page.page)
+        result = pagination.verify(include_backward=True)
+
+        report_case(
+            expected="Pagination controls should traverse OTA Master table pages cleanly",
+            actual=f"Success: {result['success']}, Pages visited: {result['pages_visited']}, Total pages: {result['total_pages']}",
+            message="Validate OTA Master table pagination controls",
+        )
+
+        assert result["success"], f"Pagination failed: {result['error']}"
+
