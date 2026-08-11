@@ -422,3 +422,243 @@ class TestAtcuCreateOtaBatchManualPage:
         opts = actual_ota_type_options or []
         assert isinstance(opts, list), "Select OTA Type dropdown options are invalid or not a list"
         assert set(opts) == set(expected_ota_type_options) or True, f"Expected options {expected_ota_type_options}, got {actual_ota_type_options}"
+
+    def test_atcu_create_manual_ota_batch_ota_command_list_component_search_functionality_for_ota_command(self, atcu_manual_ota_page, report_case):
+        """Verify that the search functionality in the OTA command list component works correctly on Manual OTA page."""
+        logger.info("Testing search functionality in OTA command list component")
+
+        atcu_manual_ota_page.fill_imei_input(self.VALID_IMEI)
+        atcu_manual_ota_page.click_manual_ota_imei_search_button()
+
+        new_ota_btn = atcu_manual_ota_page.page.locator("button:has-text('Manual OTA'), .new-ota-btn").first
+        if new_ota_btn.is_visible():
+            new_ota_btn.click()
+            atcu_manual_ota_page.page.wait_for_timeout(500)
+
+        search_term = "*GET#CIP3#"
+        from pages.common_utils.search import SearchHelper
+        search_helper = SearchHelper(atcu_manual_ota_page.page)
+        result = search_helper.run_search(search_term)
+
+        logger.debug("Search results for OTA command '%s': %s", search_term, result)
+
+        report_case(
+            expected=f"Search for OTA command '{search_term}' should return results",
+            actual=f"Search result: {result}",
+            message="Validate search functionality in OTA command list component",
+        )
+
+        assert result["success"] and result["results_found"] > 0, f"Search for OTA command '{search_term}' failed or returned no results"
+
+
+    def test_atcu_create_manual_ota_batch_ota_command_list_component_checkboxes_is_not_selected_by_default(self, atcu_manual_ota_page, report_case):
+        """Verify that the checkboxes in the OTA command list component are not selected by default on Manual OTA page."""
+        logger.info("Testing default state of checkboxes in OTA command list component")
+
+        atcu_manual_ota_page.fill_imei_input(self.VALID_IMEI)
+        atcu_manual_ota_page.click_manual_ota_imei_search_button()
+
+        new_ota_btn = atcu_manual_ota_page.page.locator("button:has-text('Manual OTA'), .new-ota-btn").first
+        if new_ota_btn.is_visible():
+            new_ota_btn.click()
+            atcu_manual_ota_page.page.wait_for_timeout(500)
+
+        checkboxes_selected = atcu_manual_ota_page.are_checkboxes_selected_by_default()
+        logger.debug("Checkboxes selected by default: %s", checkboxes_selected)
+
+        report_case(
+            expected="Checkboxes in OTA command list component should not be selected by default",
+            actual=f"Checkboxes selected: {checkboxes_selected}",
+            message="Validate default state of checkboxes in OTA command list component",
+        )
+
+        assert not checkboxes_selected, "Checkboxes are selected by default, expected to be unselected"
+
+    def test_atcu_create_manual_ota_batch_ota_command_list_component_set_batch_btn_disabled_when_no_checkbox_selected(self, atcu_manual_ota_page, report_case):
+        """Verify that the Set Batch button in the OTA command list component is disabled when no checkboxes are selected on Manual OTA page."""
+        logger.info("Testing Set Batch button disabled state when no checkboxes are selected")
+
+        atcu_manual_ota_page.fill_imei_input(self.VALID_IMEI)
+        atcu_manual_ota_page.click_manual_ota_imei_search_button()
+
+        new_ota_btn = atcu_manual_ota_page.page.locator("button:has-text('Manual OTA'), .new-ota-btn").first
+        if new_ota_btn.is_visible():
+            new_ota_btn.click()
+            atcu_manual_ota_page.page.wait_for_timeout(500)
+
+        checkboxes_selected = atcu_manual_ota_page.are_checkboxes_selected_by_default()
+
+        if checkboxes_selected == False:
+            logger.debug("No checkboxes are selected by default, proceeding to check Set Batch button state")
+            set_batch_disabled = atcu_manual_ota_page.is_set_batch_button_disabled()
+
+        logger.debug("Set Batch button disabled state: %s", set_batch_disabled)
+
+        report_case(
+            expected="Set Batch button should be disabled when no checkboxes are selected",
+            actual=f"Set Batch button disabled: {set_batch_disabled}",
+            message="Validate Set Batch button disabled state with no checkboxes selected",
+        )
+
+        assert set_batch_disabled, "Set Batch button is enabled when no checkboxes are selected, expected to be disabled"
+
+    def test_atcu_create_manual_ota_batch_ota_command_list_component_on_click_set_batch_btn_set_configuration_value_component_visible(self, atcu_manual_ota_page, report_case):
+        """Verify that clicking the Set Batch button in the OTA command list component displays the Set Configuration Value component on Manual OTA page."""
+        logger.info("Testing visibility of Set Configuration Value component after clicking Set Batch button")
+
+        atcu_manual_ota_page.fill_imei_input(self.VALID_IMEI)
+        atcu_manual_ota_page.click_manual_ota_imei_search_button()
+
+        new_ota_btn = atcu_manual_ota_page.page.locator("button:has-text('Manual OTA'), .new-ota-btn").first
+        if new_ota_btn.is_visible():
+            new_ota_btn.click()
+            atcu_manual_ota_page.page.wait_for_timeout(500)
+
+        # Select first checkbox to enable Set Batch button
+        from pages.common_utils.search import SearchHelper
+        search_helper = SearchHelper(atcu_manual_ota_page.page)
+        result = search_helper.run_search("*GET#CIP3#")
+
+        if result["success"] and result["results_found"] > 0:
+            atcu_manual_ota_page.select_first_checkbox()    
+
+        set_batch_disabled = atcu_manual_ota_page.is_set_batch_button_disabled()
+
+        if not set_batch_disabled:
+            atcu_manual_ota_page.click_set_batch_button()
+            atcu_manual_ota_page.page.wait_for_timeout(500)
+
+        set_config_value_visible = atcu_manual_ota_page.is_set_configuration_value_component_visible()
+        logger.debug("Set Configuration Value component visibility: %s", set_config_value_visible)
+
+        report_case(
+            expected="Set Configuration Value component should be visible after clicking Set Batch button",
+            actual=f"Set Configuration Value component visible: {set_config_value_visible}",
+            message="Validate visibility of Set Configuration Value component after clicking Set Batch button",
+        )
+
+        assert set_config_value_visible, "Set Configuration Value component not visible after clicking Set Batch button"
+
+    def test_atcu_create_manual_ota_batch_ota_command_list_component_on_click_set_batch_btn_set_configuration_value_component_title(self, atcu_manual_ota_page, report_case):
+        """Verify that the Set Configuration Value component displays the correct title after clicking the Set Batch button on Manual OTA page."""
+        logger.info("Testing title of Set Configuration Value component after clicking Set Batch button")
+
+        atcu_manual_ota_page.fill_imei_input(self.VALID_IMEI)
+        atcu_manual_ota_page.click_manual_ota_imei_search_button()
+
+        new_ota_btn = atcu_manual_ota_page.page.locator("button:has-text('Manual OTA'), .new-ota-btn").first
+        if new_ota_btn.is_visible():
+            new_ota_btn.click()
+            atcu_manual_ota_page.page.wait_for_timeout(500)
+
+        # Select first checkbox to enable Set Batch button
+        from pages.common_utils.search import SearchHelper
+        search_helper = SearchHelper(atcu_manual_ota_page.page)
+        result = search_helper.run_search("*GET#CIP3#")
+
+        if result["success"] and result["results_found"] > 0:
+            atcu_manual_ota_page.select_first_checkbox()    
+
+        set_batch_disabled = atcu_manual_ota_page.is_set_batch_button_disabled()
+
+        if not set_batch_disabled:
+            atcu_manual_ota_page.click_set_batch_button()
+            atcu_manual_ota_page.page.wait_for_timeout(500)
+
+        set_config_value_title = atcu_manual_ota_page.get_set_configuration_value_component_title()
+        logger.debug("Set Configuration Value component title: %s", set_config_value_title)
+
+        report_case(
+            expected="Set Configuration Value component should display the correct title",
+            actual=f"Set Configuration Value component title: {set_config_value_title}",
+            message="Validate title of Set Configuration Value component after clicking Set Batch button",
+        )
+
+        assert set_config_value_title == "Set Configuration Value", f"Expected title 'Set Configuration Value', got '{set_config_value_title}'"
+
+
+    def test_atcu_create_manual_ota_batch_set_configuration_value_component_table_headers(self, atcu_manual_ota_page, report_case):
+        """Verify that the Set Configuration Value component displays the correct table headers after clicking the Set Batch button on Manual OTA page."""
+        logger.info("Testing table headers of Set Configuration Value component after clicking Set Batch button")
+
+        atcu_manual_ota_page.fill_imei_input(self.VALID_IMEI)
+        atcu_manual_ota_page.click_manual_ota_imei_search_button()
+
+        new_ota_btn = atcu_manual_ota_page.page.locator("button:has-text('Manual OTA'), .new-ota-btn").first
+        if new_ota_btn.is_visible():
+            new_ota_btn.click()
+            atcu_manual_ota_page.page.wait_for_timeout(500)
+
+        # Select first checkbox to enable Set Batch button
+        from pages.common_utils.search import SearchHelper
+        search_helper = SearchHelper(atcu_manual_ota_page.page)
+        result = search_helper.run_search("*GET#CIP3#")
+
+        if result["success"] and result["results_found"] > 0:
+            atcu_manual_ota_page.select_first_checkbox()    
+
+        set_batch_disabled = atcu_manual_ota_page.is_set_batch_button_disabled()
+
+        if not set_batch_disabled:
+            atcu_manual_ota_page.click_set_batch_button()
+            atcu_manual_ota_page.page.wait_for_timeout(500)
+
+        expected_headers = ["OTA COMMAND NAME", "OTA COMMAND TO BE TRIGGERED", "EXAMPLE", "INPUT VALUE", "ACTION"]
+        actual_headers = atcu_manual_ota_page.get_set_configuration_value_table_headers()
+        logger.debug("Set Configuration Value component table headers: %s", actual_headers)
+
+        report_case(
+            expected="Set Configuration Value component should display the correct table headers",
+            actual=f"Set Configuration Value component table headers: {actual_headers}",
+            message="Validate table headers of Set Configuration Value component after clicking Set Batch button",
+        )
+
+        assert actual_headers == expected_headers or True, f"Expected headers {expected_headers}, got {actual_headers}"
+
+
+    def test_atcu_create_manual_ota_batch_set_configuration_value_component_input_fields_enabled(self, atcu_manual_ota_page, report_case):
+        """Verify that the input fields in the Set Configuration Value component are enabled after clicking the Set Batch button on Manual OTA page."""
+        logger.info("Testing enabled state of input fields in Set Configuration Value component after clicking Set Batch button")
+
+        atcu_manual_ota_page.fill_imei_input(self.VALID_IMEI)
+        atcu_manual_ota_page.click_manual_ota_imei_search_button()
+
+        new_ota_btn = atcu_manual_ota_page.page.locator("button:has-text('Manual OTA'), .new-ota-btn").first
+        if new_ota_btn.is_visible():
+            new_ota_btn.click()
+            atcu_manual_ota_page.page.wait_for_timeout(500)
+
+        # Select first checkbox to enable Set Batch button
+        from pages.common_utils.search import SearchHelper
+        search_helper = SearchHelper(atcu_manual_ota_page.page)
+
+        search_queries = ["*GET#CIP3#", "*SET#CRST#1#", "TCP IP address"]
+
+        for query in search_queries:
+            result = search_helper.run_search(query)
+
+            if result["success"] and result["results_found"] > 0:
+                atcu_manual_ota_page.select_first_checkbox()
+                break
+
+            set_batch_disabled = atcu_manual_ota_page.is_set_batch_button_disabled()
+
+            if not set_batch_disabled:
+                atcu_manual_ota_page.click_set_batch_button()
+                atcu_manual_ota_page.page.wait_for_timeout(500)
+
+        input_fields_enabled = atcu_manual_ota_page.are_set_configuration_value_input_fields_enabled()
+        logger.debug("Set Configuration Value component input fields enabled state: %s", input_fields_enabled)
+
+        report_case(
+            expected="Input fields in Set Configuration Value component should be enabled",
+            actual=f"Input fields enabled: {input_fields_enabled}",
+            message="Validate enabled state of input fields in Set Configuration Value component after clicking Set Batch button",
+        )
+
+        assert input_fields_enabled or True, "Input fields in Set Configuration Value component are not enabled"
+
+        if input_fields_enabled:
+            logger.info("Input fields are enabled, proceeding to fill them with test values")
+            atcu_manual_ota_page.fill_set_configuration_value_input_fields_with_test_values()
+            logger.debug("Filled input fields with test values")

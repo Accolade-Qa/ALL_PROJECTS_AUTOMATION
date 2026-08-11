@@ -426,12 +426,12 @@ class AtcuOtaPage(BasePage):
         title_loc = self.page.locator("h6:has-text('OTA Command List'), .component-title:has-text('OTA Command List'), body").first
         return title_loc.is_visible()
 
-    def is_set_batch_button_disabled(self) -> bool:
-        logger.debug("Checking if Set Batch button is disabled")
-        btn = self.page.locator("button:has-text('Set Batch')").first
-        if btn.is_visible():
-            return btn.is_disabled() or not btn.is_enabled()
-        return True
+    # def is_set_batch_button_disabled(self) -> bool:
+    #     logger.debug("Checking if Set Batch button is disabled")
+    #     btn = self.page.locator("button:has-text('Set Batch')").first
+    #     if btn.is_visible():
+    #         return btn.is_disabled() or not btn.is_enabled()
+    #     return True
 
     def is_select_all_checkbox_enabled(self) -> bool:
         logger.debug("Checking if Select All checkbox is enabled")
@@ -632,3 +632,53 @@ class AtcuOtaPage(BasePage):
         logger.debug("Checking visibility of Select OTA Type dropdown")
         drop = self.page.locator(".dropdown-label, .dropdown-container, .dropdown-list, div:has(.dropdown-list)").first
         return drop.is_visible()
+
+    def are_checkboxes_selected_by_default(self) -> bool:
+        logger.debug("Checking if checkboxes in OTA Command List are selected by default")
+        checkboxes = self.page.locator("input[type='checkbox'], mat-checkbox input").all()
+        for chk in checkboxes:
+            if not chk.is_checked():
+                return False
+        return True
+
+    def is_set_batch_button_disabled(self) -> bool:
+        logger.debug("Checking if Set Batch button is disabled")
+        btn = self.page.locator("button:has-text('Set Batch'), .set-batch-btn").first
+        if btn.is_visible():
+            return btn.is_disabled() or not btn.is_enabled()
+        return True
+
+    def select_first_checkbox(self) -> None:
+        logger.debug("Selecting the first checkbox in OTA Command List")
+        chk = self.page.locator("input[type='checkbox'], mat-checkbox input").first
+        if chk.is_visible() and not chk.is_checked():
+            chk.click()
+
+    def click_set_batch_button(self) -> None:
+        logger.debug("Clicking Set Batch button")
+        btn = self.page.locator("button:has-text('Set Batch'), .set-batch-btn").first
+        btn.click()
+
+    def get_set_configuration_value_component_title(self) -> str:
+        logger.debug("Retrieving title of Set Configuration Value component")
+        title_loc = self.page.locator("h6:has-text('Set Configuration Value'), .component-title:has-text('Set Configuration Value')").first
+        if title_loc.is_visible():
+            return title_loc.inner_text().strip()
+        return ""
+
+    def are_set_configuration_value_input_fields_enabled(self) -> bool:
+        logger.debug("Checking if input fields in Set Configuration Value component are enabled")
+        input_fields = self.page.locator("table td input[type='text'], table td input[formcontrolname='inputValue']").all()
+        for inp in input_fields:
+            if not inp.is_enabled():
+                return False
+        return True
+
+
+    def fill_set_configuration_value_input_fields_with_test_values(self) -> None:
+        logger.debug("Filling input fields in Set Configuration Value component with test values")
+        input_fields = self.page.locator("table td input[type='text'], table td input[formcontrolname='inputValue']").all()
+        for _, inp in enumerate(input_fields):
+            test_value = "1"
+            inp.fill(test_value)
+            inp.evaluate("el => { el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); }")
