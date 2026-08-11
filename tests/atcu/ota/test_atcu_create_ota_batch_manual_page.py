@@ -639,7 +639,6 @@ class TestAtcuCreateOtaBatchManualPage:
 
             if result["success"] and result["results_found"] > 0:
                 atcu_manual_ota_page.select_first_checkbox()
-                break
 
             set_batch_disabled = atcu_manual_ota_page.is_set_batch_button_disabled()
 
