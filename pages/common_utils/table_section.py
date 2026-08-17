@@ -179,6 +179,24 @@ class TableSection:
 
         return row_data
 
+    def _get_button_text(self, button: Locator) -> str:
+        """Extract a readable label for a button."""
+        text = button.get_attribute("aria-label")
+
+        if not text:
+            text = button.get_attribute("title")
+
+        if not text:
+            try:
+                text = button.locator("mat-icon").inner_text().strip()
+            except Exception:
+                text = ""
+
+        if not text:
+            text = button.inner_text().strip()
+
+        return text.strip() if text else ""
+
     def get_action_buttons(self, row_index: int) -> list[str]:
         """
         Returns a list of action button names for a specific row index
@@ -206,25 +224,7 @@ class TableSection:
 
         for i in range(button_count):
             button = buttons.nth(i)
-
-            # Try aria-label
-            text = button.get_attribute("aria-label")
-
-            # Try title attribute
-            if not text:
-                text = button.get_attribute("title")
-
-            # Try mat-icon text
-            if not text:
-                try:
-                    text = button.locator("mat-icon").inner_text().strip()
-                except Exception:
-                    pass
-
-            # Fallback to inner text
-            if not text:
-                text = button.inner_text().strip()
-
+            text = self._get_button_text(button)
             if text:
                 buttons_text.append(text)
 
@@ -235,3 +235,91 @@ class TableSection:
         )
 
         return buttons_text
+
+    def get_action_button(
+        self, row_index: int, action_name: str | None = None
+    ) -> Locator | list[Locator]:
+        """Return a matching button for a row, or all buttons in the row when no name is passed."""
+        table = self.wait_for_table()
+        rows = table.locator("tbody tr")
+
+        if row_index >= rows.count():
+            raise IndexError(
+                f"Row index {row_index} out of range. Total rows: {rows.count()}"
+            )
+
+        row_buttons = rows.nth(row_index).locator("td button")
+
+        if action_name is None:
+            return [row_buttons.nth(i) for i in range(row_buttons.count())]
+
+        for i in range(row_buttons.count()):
+            button = row_buttons.nth(i)
+            if self._get_button_text(button).lower() == action_name.lower():
+                return button
+
+        raise ValueError(
+            f"Action button '{action_name}' not found for row index {row_index}"
+        )
+
+    def get_disabled_action_buttons(self) -> list[dict[str, int | str | bool]]:
+        """Iterate every row and return any action buttons that are not enabled."""
+        table = self.wait_for_table()
+        rows = table.locator("tbody tr")
+        total_rows = rows.count()
+
+        disabled_buttons = []
+
+        for row_index in range(total_rows):
+            row_buttons = rows.nth(row_index).locator("td button")
+            for button_index in range(row_buttons.count()):
+                button = row_buttons.nth(button_index)
+                button_text = self._get_button_text(button)
+                if not button_text:
+                    continue
+
+                is_enabled = button.is_enabled() and not button.is_disabled()
+                if not is_enabled:
+                    disabled_buttons.append(
+                        {
+                            "row_index": row_index,
+                            "button_name": button_text,
+                            "enabled": is_enabled,
+                        }
+                    )
+
+        logger.info("Disabled action buttons found: %s", disabled_buttons)
+        return disabled_buttons
+
+    def is_action_button_enabled(
+        self, row_index: int | None = None, action_name: str | None = None
+    ) -> bool:
+        """Check whether a specific button is enabled, or whether all row buttons are enabled."""
+        if row_index is None:
+            return len(self.get_disabled_action_buttons()) == 0
+
+        if action_name is not None:
+            button = self.get_action_button(row_index, action_name)
+            return button.is_enabled() and not button.is_disabled()
+
+        buttons = self.get_action_button(row_index)
+        return all(
+            button.is_enabled() and not button.is_disabled()
+            for button in buttons
+        )
+
+    def is_action_button_disabled(
+        self, row_index: int | None = None, action_name: str | None = None
+    ) -> bool:
+        """Check whether a specific button is disabled, or whether any row button is disabled."""
+        if row_index is None:
+            return len(self.get_disabled_action_buttons()) > 0
+
+        if action_name is not None:
+            button = self.get_action_button(row_index, action_name)
+            return button.is_disabled() or not button.is_enabled()
+
+        buttons = self.get_action_button(row_index)
+        return any(
+            button.is_disabled() or not button.is_enabled() for button in buttons
+        )

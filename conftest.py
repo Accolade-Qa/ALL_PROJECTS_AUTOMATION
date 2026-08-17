@@ -102,7 +102,7 @@ def browser(playwright_instance, request):
 
 # Context with zoom applied
 def _new_context_with_zoom(browser, **kwargs):
-    context = browser.new_context(viewport=None)
+    context = browser.new_context(viewport=None, **kwargs)
 
     context.add_init_script(ZOOM_SCRIPT)
     logger.debug("Created new browser context with zoom applied")
@@ -357,22 +357,82 @@ def login_page(browser):
     context.close()
 
 
+# Session-scoped Storage State Fixture (Login once per test session)
+@pytest.fixture(scope="session")
+def user_storage_state(browser, project_config):
+    """
+    Session-scoped authentication fixture.
+    Logs in once per test run per project and captures cookies, localStorage, and sessionStorage.
+    """
+    logger.info(
+        "Initializing session-scoped storage state for project: %s",
+        project_config["project"],
+    )
+    context = _new_context_with_zoom(browser, accept_downloads=True)
+    auth_page = context.new_page()
+
+    from pages.common_login_page import LoginPage
+
+    login = LoginPage(auth_page)
+    login.load(project_config["base_url"])
+    login.login(project_config["username"], project_config["password"])
+    auth_page.wait_for_load_state("networkidle")
+
+    # Capture cookies & localStorage state
+    storage_state_data = context.storage_state()
+
+    # Capture sessionStorage state
+    try:
+        session_storage_json = auth_page.evaluate(
+            "() => JSON.stringify(sessionStorage)"
+        )
+    except Exception as e:
+        logger.warning("Failed to extract sessionStorage during setup: %s", e)
+        session_storage_json = "{}"
+
+    logger.info(
+        "Session-scoped storage state successfully captured for %s",
+        project_config["project"],
+    )
+
+    auth_page.close()
+    context.close()
+
+    return {
+        "storage_state": storage_state_data,
+        "session_storage": session_storage_json,
+    }
+
+
 # Authenticated Page Fixture
 @pytest.fixture(scope="function")
-def page(browser, project_config):
+def page(browser, project_config, user_storage_state):
+    # Pass saved cookies & localStorage to new context
     context = _new_context_with_zoom(
         browser,
         accept_downloads=True,
+        storage_state=user_storage_state["storage_state"],
     )
 
+    # Pre-seed sessionStorage BEFORE page scripts run using init script
+    session_storage_json = user_storage_state.get("session_storage", "{}")
+    if session_storage_json and session_storage_json != "{}":
+        init_script = f"""
+        (() => {{
+            try {{
+                const data = {session_storage_json};
+                for (const key in data) {{
+                    sessionStorage.setItem(key, data[key]);
+                }}
+            }} catch (e) {{
+                console.error("Failed to seed sessionStorage:", e);
+            }}
+        }})();
+        """
+        context.add_init_script(init_script)
+
     page = context.new_page()
-    logger.info("New page opened")
-
-    # Debugging listeners to log network errors and console issues
-    # def log_console(msg):
-    #     if msg.type in ["error", "warning"]:
-    #         logger.warning(f"Browser console {msg.type}: {msg.text}")
-
+    logger.info("New authenticated page opened")
 
     def log_response(response):
         if response.status >= 400:
@@ -382,20 +442,15 @@ def page(browser, project_config):
             except Exception:
                 pass
 
-    # page.on("console", log_console)
     page.on("response", log_response)
 
-
-    from pages.common_login_page import LoginPage
-
-    login = LoginPage(page)
-    login.load(project_config["base_url"])
-    login.login(project_config["username"], project_config["password"])
-
-    page.wait_for_load_state("networkidle")
-    logger.info("Authenticated context ready: %s", page.url)
+    # Navigate to base URL - auth tokens are pre-injected into sessionStorage and context cookies
+    if page.url == "about:blank":
+        page.goto(project_config["base_url"], wait_until="domcontentloaded")
+    logger.info("Authenticated page ready: %s", page.url)
 
     yield page
+
 
     page.close()
     context.close()

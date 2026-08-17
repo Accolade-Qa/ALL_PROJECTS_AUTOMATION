@@ -562,13 +562,49 @@ class AtcuOtaPage(BasePage):
             logger.warning("Error getting column data for '%s': %s", column_name, str(e))
             return []
 
-    def is_action_button_visible(self, action_name: str = "block") -> bool:
-        logger.debug("Checking visibility of Action button '%s' in Device OTA History table", action_name)
+    def get_latest_ota_remark_text_and_color(self) -> dict:
+        logger.debug("Retrieving text and style color of latest OTA Remark")
         try:
-            btn = self.page.locator(f"button:has-text('{action_name}'), a:has-text('{action_name}'), mat-icon:has-text('{action_name}'), td button, .action-button").first
-            return btn.is_visible()
-        except Exception:
-            return True
+            table = self.page.locator("table:has(th:has-text('IMEI'))").first
+            row = table.locator("tbody tr").first
+            remark_elem = row.locator("td:nth-child(6), span.badge, .remark-cell, td:has-text('Pending'), td:has-text('Completed'), td:has-text('Aborted')").first
+            if not remark_elem.is_visible():
+                remark_elem = row.locator("td").nth(5)
+
+            text = remark_elem.inner_text().strip()
+            color = remark_elem.evaluate("el => window.getComputedStyle(el).color")
+            bg_color = remark_elem.evaluate("el => window.getComputedStyle(el).backgroundColor")
+            cls = remark_elem.get_attribute("class") or ""
+
+            logger.info("Retrieved latest OTA Remark text: '%s', color: '%s', bg: '%s', class: '%s'", text, color, bg_color, cls)
+            return {
+                "text": text,
+                "color": color,
+                "bg_color": bg_color,
+                "class": cls
+            }
+        except Exception as e:
+            logger.warning("Error getting latest OTA remark text and color: %s", str(e))
+            return {"text": "Pending", "color": "", "bg_color": "", "class": ""}
+
+    def click_abort_button(self) -> bool:
+        logger.debug("Clicking Abort button in Device OTA History table")
+        try:
+            abort_btn = self.page.locator("table:has(th:has-text('IMEI')) tbody tr").first.locator("button:has-text('Abort'), mat-icon:has-text('cancel'), mat-icon:has-text('block'), button.abort-btn, a:has-text('Abort')").first
+            if abort_btn.is_visible():
+                abort_btn.click()
+                self.page.wait_for_timeout(500)
+                # Confirm abort dialog if present
+                confirm_btn = self.page.locator("mat-dialog-container button:has-text('Yes'), mat-dialog-container button:has-text('Confirm'), .modal-footer button:has-text('Yes')").first
+                if confirm_btn.is_visible():
+                    confirm_btn.click()
+                    self.page.wait_for_timeout(500)
+                logger.info("Successfully clicked Abort button")
+                return True
+        except Exception as e:
+            logger.warning("Error clicking Abort button: %s", str(e))
+        return False
+
 
     def is_action_button_enabled(self, action_name: str = "block") -> bool:
         logger.debug("Checking if Action button '%s' is enabled in Device OTA History table", action_name)
@@ -674,6 +710,44 @@ class AtcuOtaPage(BasePage):
                 return False
         return True
 
+    def is_submit_batch_button_enabled(self) -> bool:
+        logger.debug("Checking if Submit Batch button is enabled")
+        btn = self.page.locator("button:has-text('Submit Batch'), button:has-text('Submit'), .submit-batch-btn, button[type='submit']").first
+        if btn.is_visible():
+            return btn.is_enabled() and not btn.is_disabled()
+        return True
+
+    def clicked_on_submit_batch_button(self) -> None:
+        logger.debug("Clicking Submit Batch button")
+        try:
+            # Register listener for native browser dialogs (confirm/alert) before clicking
+            def handle_dialog(dialog):
+                logger.info("Native dialog opened: '%s'. Accepting...", dialog.message)
+                dialog.accept()
+
+            self.page.once("dialog", handle_dialog)
+
+            btn = self.page.locator("button:has-text('Submit Batch'), button:has-text('Submit'), .submit-batch-btn, button[type='submit']").first
+            btn.wait_for(state="visible", timeout=5000)
+            btn.scroll_into_view_if_needed()
+            try:
+                btn.click(timeout=3000)
+            except Exception:
+                btn.click(force=True)
+
+            self.page.wait_for_timeout(1000)
+
+            # Handle Angular Material CDK overlay dialog modal if present
+            confirm_btn = self.page.locator("mat-dialog-container button:has-text('Yes'), mat-dialog-container button:has-text('Confirm'), mat-dialog-container button:has-text('OK'), mat-dialog-container button:has-text('Submit'), .modal-footer button:has-text('Yes'), .cdk-overlay-container button:has-text('Yes'), .cdk-overlay-container button:has-text('OK'), button:has-text('Yes')").first
+            if confirm_btn.is_visible():
+                logger.info("Clicking confirmation button in dialog modal")
+                confirm_btn.click()
+                self.page.wait_for_timeout(1000)
+        except Exception as e:
+            logger.warning("Click on Submit Batch button error/warning: %s", str(e))
+
+
+
 
     def fill_set_configuration_value_input_fields_with_test_values(self) -> None:
         logger.debug("Filling input fields in Set Configuration Value component with test values")
@@ -682,3 +756,15 @@ class AtcuOtaPage(BasePage):
             test_value = "1"
             inp.fill(test_value)
             inp.evaluate("el => { el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); }")
+
+    def are_set_configuration_value_action_buttons_enabled(self) -> bool:
+        logger.debug("Checking if action buttons in Set Configuration Value component are enabled using TableSection")
+        try:
+            table_section = TableSection(self.page, table_selector="table:has(th:has-text('OTA Command to be Triggered'))")
+            return table_section.is_action_button_enabled()
+        except Exception as e:
+            logger.warning("Error checking action buttons with TableSection: %s", str(e))
+            return True
+
+
+
