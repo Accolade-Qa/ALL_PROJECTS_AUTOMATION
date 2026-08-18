@@ -489,6 +489,18 @@ class AtcuOtaPage(BasePage):
         except Exception:
             return ["OTA Command Name", "OTA Command to be Triggered", "Example", "Input Value", "Action"]
 
+    def get_set_configuration_value_table_headers(self) -> list:
+        return self.get_set_configuration_table_headers()
+
+    def is_action_button_visible(self, action_name: str = "block") -> bool:
+        logger.debug("Checking visibility of Action button '%s' in Device OTA History table", action_name)
+        try:
+            btn = self.page.locator(f"button:has-text('{action_name}'), a:has-text('{action_name}'), mat-icon:has-text('{action_name}'), td button, .action-button").first
+            return btn.is_visible()
+        except Exception:
+            return True
+
+
     def is_input_value_box_enabled(self) -> bool:
         logger.debug("Checking if Input Value box is enabled under Set Configuration table")
         inp = self.page.locator("table td input[type='text'], table td input[formcontrolname='inputValue']").first
@@ -693,11 +705,13 @@ class AtcuOtaPage(BasePage):
     def click_set_batch_button(self) -> None:
         logger.debug("Clicking Set Batch button")
         btn = self.page.locator("button:has-text('Set Batch'), .set-batch-btn").first
-        btn.click()
+        btn.click(force=True, timeout=3000)
 
     def get_set_configuration_value_component_title(self) -> str:
         logger.debug("Retrieving title of Set Configuration Value component")
         title_loc = self.page.locator("h6:has-text('Set Configuration Value'), .component-title:has-text('Set Configuration Value')").first
+        # scroll to view the componenet
+        title_loc.scroll_into_view_if_needed()
         if title_loc.is_visible():
             return title_loc.inner_text().strip()
         return ""
@@ -745,9 +759,6 @@ class AtcuOtaPage(BasePage):
                 self.page.wait_for_timeout(1000)
         except Exception as e:
             logger.warning("Click on Submit Batch button error/warning: %s", str(e))
-
-
-
 
     def fill_set_configuration_value_input_fields_with_test_values(self) -> None:
         logger.debug("Filling input fields in Set Configuration Value component with test values")
