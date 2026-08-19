@@ -12,25 +12,26 @@ class TestTmlRequestLogPage:
     @pytest.fixture(autouse=True)
     def log_test_case(self, request):
         test_name = request.node.name
-        logger.info("Starting Dispatched Device test: %s", test_name)
+        logger.info("Starting TML Request Log test: %s", test_name)
         logger.debug("Executing test node: %s", request.node.nodeid)
         yield
         report = getattr(request.node, "rep_call", None)
         if report is None:
             logger.debug(
-                "Dispatched Device test finished without call report: %s", test_name
+                "TML Request Log test finished without call report: %s", test_name
             )
         elif report.passed:
-            logger.info("Dispatched Device test passed: %s", test_name)
+            logger.info("TML Request Log test passed: %s", test_name)
         elif report.failed:
-            logger.error("Dispatched Device test failed: %s", test_name)
+            logger.error("TML Request Log test failed: %s", test_name)
             logger.debug(
-                "Dispatched Device failure details for %s: %s",
+                "TML Request Log failure details for %s: %s",
                 test_name,
                 report.longrepr,
             )
         elif report.skipped:
-            logger.warning("Dispatched Device test skipped: %s", test_name)
+            logger.warning("TML Request Log test skipped: %s", test_name)
+
 
     # test that the page is loaded successfully
     @pytest.mark.regression
