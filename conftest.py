@@ -913,7 +913,6 @@ def atcu_create_ota_batch_page(page, project_config):
     logger.info("ATCU Create OTA Batch page fixture ready at %s", create_url)
     return ota_page
 
-
 @pytest.fixture
 def atcu_manual_ota_page(page, project_config):
     from pages.atcu.atcu_ota_page import AtcuOtaPage

@@ -174,6 +174,13 @@ class AtcuOtaPage(BasePage):
         if title_loc.is_visible():
             return title_loc.inner_text().strip()
         return ""
+    def get_ota_batch_table_component_title(self) -> str:
+        logger.debug("Retrieving OTA Batch table component title")
+        title_loc = self.page.locator("h6:has-text('OTA Batch List'), .component-title:has-text('OTA Batch List')").first
+        if title_loc.is_visible():
+            return title_loc.inner_text().strip()
+        return ""
+
 
     def are_add_ota_command_form_fields_visible(self) -> bool:
         logger.debug("Checking visibility of Add OTA Command form fields")
@@ -777,5 +784,25 @@ class AtcuOtaPage(BasePage):
             logger.warning("Error checking action buttons with TableSection: %s", str(e))
             return True
 
-
-
+    def get_ota_batch_page_header_component_buttons(self):
+        logger.debug("Retrieving buttons from OTA Batch page header component")
+        try:
+            header_buttons = self.page.locator("div.page-header button").all()
+            button_texts = {}
+            for btn in header_buttons:
+            # extract text, is_visible, is_enabled, is_disabled, router_link from the button element
+                text = btn.inner_text().strip()
+                is_visible = btn.is_visible()
+                is_enabled = btn.is_enabled()
+                is_disabled = btn.is_disabled()
+                router_link = btn.get_attribute("ng-reflect-router-link") or ""
+                button_texts[text] = {
+                    "is_visible": is_visible,
+                    "is_enabled": is_enabled,
+                    "is_disabled": is_disabled,
+                    "router_link": router_link
+                }
+            return button_texts
+        except Exception as e:
+            logger.warning("Error retrieving OTA Batch page header buttons: %s", str(e))
+            return {}   

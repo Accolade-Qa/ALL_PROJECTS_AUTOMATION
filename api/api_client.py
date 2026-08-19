@@ -21,6 +21,16 @@ class APIClient:
         )
 
     @staticmethod
+    def is_atcu_api(api_base_url):
+        """Return True when the configured API host is the ATCU deployment."""
+        if not api_base_url:
+            return False
+
+        normalized_base_url = api_base_url.rstrip("/").lower()
+        return "aepl-tcu4g-qa" in normalized_base_url or "6101" in normalized_base_url
+
+
+    @staticmethod
     def build_endpoint(api_base_url, endpoint):
         """Normalize an API endpoint for the active project.
 
@@ -34,32 +44,51 @@ class APIClient:
 
         normalized_endpoint = endpoint if endpoint.startswith("/") else f"/{endpoint}"
 
-        if APIClient.is_sampark_api(api_base_url) and not normalized_endpoint.startswith(
-            "/api/"
-        ):
+        requires_api_prefix = APIClient.is_sampark_api(api_base_url)
+        if requires_api_prefix and not normalized_endpoint.startswith("/api/"):
             return f"/api{normalized_endpoint}"
 
         return normalized_endpoint
 
-    @staticmethod
-    def validate_credentials(api_username, api_password):
-        """Validate that API credentials are configured.
-
-        Args:
-            api_username: API username.
-            api_password: API password.
-
-        Raises:
-            ValueError: If api_username or api_password is not set.
-        """
-        if not api_username or not api_password:
-            raise ValueError(
-                "api_username / api_password must be provided "
-                "(or derive from project configuration)."
-            )
 
     @staticmethod
-    def get_bearer_token(page, api_base_url, api_username, api_password):
+    def resolve_api_credentials(page, api_base_url=None, api_username=None, api_password=None):
+        """Dynamically resolve api_base_url, api_username, and api_password for any active project."""
+        from config import config
+
+        resolved_url = api_base_url
+
+        if not resolved_url and page and hasattr(page, "url") and page.url and page.url != "about:blank":
+            from urllib.parse import urlparse
+            parsed = urlparse(page.url)
+            if parsed.scheme and parsed.netloc:
+                netloc = parsed.netloc.split(":")[0]
+                resolved_url = f"{parsed.scheme}://{netloc}"
+
+        if not resolved_url:
+            resolved_url = getattr(config, "API_BASE_URL", None) or getattr(config, "BASE_URL", "https://aepl-tcu4g-qa.accoladeelectronics.com")
+
+        if resolved_url:
+            from urllib.parse import urlparse
+            parsed = urlparse(resolved_url)
+            if parsed.netloc and (":9090" in parsed.netloc or ":6101" in parsed.netloc):
+                clean_netloc = parsed.netloc.split(":")[0]
+                resolved_url = f"{parsed.scheme}://{clean_netloc}"
+
+        if "/login" in resolved_url:
+            resolved_url = resolved_url.split("/login")[0]
+
+        resolved_url = resolved_url.rstrip("/")
+
+        resolved_username = api_username or getattr(config, "API_USERNAME", None) or getattr(config, "USERNAME", "")
+        resolved_password = api_password or getattr(config, "API_PASSWORD", None) or getattr(config, "PASSWORD", "")
+
+        return resolved_url, resolved_username, resolved_password
+
+
+
+    @staticmethod
+    def get_bearer_token(page, api_base_url=None, api_username=None, api_password=None):
         """Authenticate with API and retrieve bearer token.
 
         Args:
@@ -70,11 +99,11 @@ class APIClient:
 
         Returns:
             str: Bearer token for subsequent API requests.
-
-        Raises:
-            Exception: If login fails or token is not found in response.
         """
-        APIClient.validate_credentials(api_username, api_password)
+        api_base_url, api_username, api_password = APIClient.resolve_api_credentials(
+            page, api_base_url, api_username, api_password
+        )
+
 
         login_url = (
             f"{api_base_url}{APIClient.build_endpoint(api_base_url, '/users/login')}"
@@ -85,26 +114,56 @@ class APIClient:
             "password": api_password,
         }
 
-        logger.info("Logging in to API user %s", api_username)
-        login_response = page.request.post(
-            login_url,
-            data=json.dumps(login_payload),
-            headers={"Content-Type": "application/json"},
-        )
-
-        if not login_response.ok:
-            raise Exception(
-                f"API login failed: {login_response.status} {login_response.text()}"
+        logger.info("Logging in to API user %s at %s", api_username, login_url)
+        try:
+            login_response = page.request.post(
+                login_url,
+                data=json.dumps(login_payload),
+                headers={"Content-Type": "application/json"},
             )
-        logger.info("API login succeeded with status %s", login_response.status)
 
-        login_data = login_response.json()
-        token = login_data.get("data", {}).get("token")
+            if login_response.ok:
+                login_data = login_response.json()
+                token = login_data.get("data", {}).get("token") or login_data.get("token")
+                if token:
+                    logger.info("API login succeeded, acquired bearer token")
+                    return token
+        except Exception as e:
+            logger.debug("API login request exception: %s", str(e))
 
-        if not token:
-            raise Exception("Token not found in login response payload")
+        # Fallback: Extract bearer token directly from browser storage
+        try:
+            browser_token = page.evaluate("""() => {
+                for (let storage of [sessionStorage, localStorage]) {
+                    for (let i = 0; i < storage.length; i++) {
+                        let key = storage.key(i);
+                        let val = storage.getItem(key);
+                        if (!val) continue;
+                        if (val.startsWith('{')) {
+                            try {
+                                let parsed = JSON.parse(val);
+                                if (parsed && typeof parsed === 'object') {
+                                    if (parsed.token) return parsed.token;
+                                    if (parsed.accessToken) return parsed.accessToken;
+                                    if (parsed.data && parsed.data.token) return parsed.data.token;
+                                }
+                            } catch(e) {}
+                        }
+                        if (key.toLowerCase().includes('token') && !val.startsWith('{')) {
+                            return val;
+                        }
+                    }
+                }
+                return sessionStorage.getItem('token') || localStorage.getItem('token');
+            }""")
+            if browser_token:
+                logger.info("Retrieved bearer token directly from browser session storage")
+                return browser_token
+        except Exception as e:
+            logger.debug("Could not retrieve bearer token from browser storage: %s", str(e))
 
-        return token
+        raise Exception(f"Failed to retrieve API bearer token from {login_url}")
+
 
     @staticmethod
     def get_request_headers(
@@ -126,10 +185,13 @@ class APIClient:
 
         headers = {
             "Authorization": f"Bearer {token}",
+            "token": token,
+            "Token": token,
         }
 
         if include_json_content_type:
             headers["Content-Type"] = "application/json"
+
 
         if extra_headers:
             headers.update(extra_headers)

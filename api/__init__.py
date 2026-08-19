@@ -1,6 +1,7 @@
 """API clients for the LCT-A4G automation framework."""
 
 from .api_client import APIClient
+from .atcu import AtcuOtaPageAPI
 from .customer_api import CustomerAPI
 from .device_dashboard_api import DeviceDashboardAPI
 from .government_server_api import GovtServerAPI
@@ -13,6 +14,7 @@ from .user_api import UserAPI
 
 __all__ = [
     "APIClient",
+    "AtcuOtaPageAPI",
     "CustomerAPI",
     "DeviceDashboardAPI",
     "GovtServerAPI",

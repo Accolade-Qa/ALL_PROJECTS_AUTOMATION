@@ -330,33 +330,3 @@ class TestAtcuManualOtaPage:
         )
 
         assert actual_title != "", "Component title is not visible on Manual OTA page"
-
-    @pytest.mark.smoke
-    @pytest.mark.ui
-    @pytest.mark.regression
-    def test_atcu_manual_ota_history_table_headers_validation(self, atcu_manual_ota_page, report_case):
-        """Verify headers on OTA History table are correct."""
-        logger.info("Testing OTA History table headers")
-        atcu_manual_ota_page.go_to_manual_ota_page()
-
-        expected_headers = ["BATCH ID", "BATCH NAME", "UIN", "IMEI", "OTA TRIGGERED", "OTA RESPONSE", "CREATED AT", "OTA STATUS"]
-
-        report_case(
-            expected=f"OTA History table headers should match {expected_headers}",
-            actual="Headers verified",
-            message="Validate OTA History table headers",
-        )
-
-    @pytest.mark.smoke
-    @pytest.mark.ui
-    @pytest.mark.regression
-    def test_atcu_manual_ota_history_export_button_clickability(self, atcu_manual_ota_page, report_case):
-        """Verify Export button on OTA History component is clickable."""
-        logger.info("Testing Export button on OTA History component")
-        atcu_manual_ota_page.go_to_manual_ota_page()
-
-        report_case(
-            expected="Export button should be visible and clickable on OTA History component",
-            actual="Export button verified",
-            message="Validate Export button on OTA History component",
-        )

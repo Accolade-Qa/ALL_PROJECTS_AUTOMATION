@@ -57,3 +57,12 @@ GENERATE_TML_TICKET = "/api/crm/generateTickets"
 GET_STATUS_UPDATE_LOGS = "/api/crm/getStatusUpdateLogs"
 GET_DASHBOARD_COUNTS = "/api/crm/getDashCounts"
 
+# ATCU OTA batch endpoints
+GET_ATCU_OTA_BATCH_LIST = (
+    "/api/ota/fetchOtaBatchList?pageNo={page_no}&size={size}&search={search}"
+)
+GET_ATCU_OTA_BATCH_KPI = (
+    "/api/ota/fetchOtaBatchKpi?pageNo={page_no}&size={size}&search={search}"
+    "&batchRefId={batch_ref_id}&kpiSelected={kpi_selected}"
+)
+
