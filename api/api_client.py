@@ -53,35 +53,12 @@ class APIClient:
 
     @staticmethod
     def resolve_api_credentials(page, api_base_url=None, api_username=None, api_password=None):
-        """Dynamically resolve api_base_url, api_username, and api_password for any active project."""
+        """Resolve API settings from the active project's config and env file."""
         from config import config
 
-        resolved_url = api_base_url
-
-        if not resolved_url and page and hasattr(page, "url") and page.url and page.url != "about:blank":
-            from urllib.parse import urlparse
-            parsed = urlparse(page.url)
-            if parsed.scheme and parsed.netloc:
-                netloc = parsed.netloc.split(":")[0]
-                resolved_url = f"{parsed.scheme}://{netloc}"
-
-        if not resolved_url:
-            resolved_url = getattr(config, "API_BASE_URL", None) or getattr(config, "BASE_URL", "https://aepl-tcu4g-qa.accoladeelectronics.com")
-
-        if resolved_url:
-            from urllib.parse import urlparse
-            parsed = urlparse(resolved_url)
-            if parsed.netloc and (":9090" in parsed.netloc or ":6101" in parsed.netloc):
-                clean_netloc = parsed.netloc.split(":")[0]
-                resolved_url = f"{parsed.scheme}://{clean_netloc}"
-
-        if "/login" in resolved_url:
-            resolved_url = resolved_url.split("/login")[0]
-
-        resolved_url = resolved_url.rstrip("/")
-
-        resolved_username = api_username or getattr(config, "API_USERNAME", None) or getattr(config, "USERNAME", "")
-        resolved_password = api_password or getattr(config, "API_PASSWORD", None) or getattr(config, "PASSWORD", "")
+        resolved_url = (api_base_url or config.API_BASE_URL).rstrip("/")
+        resolved_username = api_username or config.API_USERNAME
+        resolved_password = api_password or config.API_PASSWORD
 
         return resolved_url, resolved_username, resolved_password
 
@@ -105,9 +82,10 @@ class APIClient:
         )
 
 
-        login_url = (
-            f"{api_base_url}{APIClient.build_endpoint(api_base_url, '/users/login')}"
-        )
+        from config import config
+
+        login_endpoint = getattr(config, "API_LOGIN_ENDPOINT", "/users/login")
+        login_url = f"{api_base_url}{APIClient.build_endpoint(api_base_url, login_endpoint)}"
 
         login_payload = {
             "userEmail": api_username,
@@ -122,47 +100,29 @@ class APIClient:
                 headers={"Content-Type": "application/json"},
             )
 
-            if login_response.ok:
-                login_data = login_response.json()
-                token = login_data.get("data", {}).get("token") or login_data.get("token")
-                if token:
-                    logger.info("API login succeeded, acquired bearer token")
-                    return token
-        except Exception as e:
-            logger.debug("API login request exception: %s", str(e))
+            if not login_response.ok:
+                response_text = login_response.text()
+                logger.error(
+                    "API login failed with status %s: %s",
+                    login_response.status,
+                    response_text,
+                )
+                raise Exception(
+                    f"API login failed: {login_response.status} {response_text}"
+                )
 
-        # Fallback: Extract bearer token directly from browser storage
-        try:
-            browser_token = page.evaluate("""() => {
-                for (let storage of [sessionStorage, localStorage]) {
-                    for (let i = 0; i < storage.length; i++) {
-                        let key = storage.key(i);
-                        let val = storage.getItem(key);
-                        if (!val) continue;
-                        if (val.startsWith('{')) {
-                            try {
-                                let parsed = JSON.parse(val);
-                                if (parsed && typeof parsed === 'object') {
-                                    if (parsed.token) return parsed.token;
-                                    if (parsed.accessToken) return parsed.accessToken;
-                                    if (parsed.data && parsed.data.token) return parsed.data.token;
-                                }
-                            } catch(e) {}
-                        }
-                        if (key.toLowerCase().includes('token') && !val.startsWith('{')) {
-                            return val;
-                        }
-                    }
-                }
-                return sessionStorage.getItem('token') || localStorage.getItem('token');
-            }""")
-            if browser_token:
-                logger.info("Retrieved bearer token directly from browser session storage")
-                return browser_token
-        except Exception as e:
-            logger.debug("Could not retrieve bearer token from browser storage: %s", str(e))
+            login_data = login_response.json()
+            token = login_data.get("data", {}).get("token") or login_data.get("token")
+            if token:
+                logger.info("API login succeeded, acquired bearer token")
+                return token
 
-        raise Exception(f"Failed to retrieve API bearer token from {login_url}")
+            raise Exception(f"API login response did not contain a bearer token: {login_data}")
+        except Exception as e:
+            logger.error("API login request failed: %s", str(e))
+            raise Exception(
+                f"Failed to retrieve API bearer token from {login_url}: {e}"
+            ) from e
 
 
     @staticmethod
@@ -185,8 +145,7 @@ class APIClient:
 
         headers = {
             "Authorization": f"Bearer {token}",
-            "token": token,
-            "Token": token,
+            "token": token
         }
 
         if include_json_content_type:
@@ -203,6 +162,11 @@ class APIClient:
         page, api_base_url, api_username, api_password, method, endpoint, **kwargs
     ):
         """Send an authenticated API request."""
+
+        api_base_url, api_username, api_password = APIClient.resolve_api_credentials(
+            page, api_base_url, api_username, api_password
+        )
+        endpoint = APIClient.build_endpoint(api_base_url, endpoint)
 
         headers = kwargs.pop("headers", None)
 

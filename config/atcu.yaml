@@ -38,8 +38,10 @@ user_management_url: "https://aepl-tcu4g-qa.accoladeelectronics.com/user-managem
 role_management_url: "https://aepl-tcu4g-qa.accoladeelectronics.com/role-management"
 role_group_url: "https://aepl-tcu4g-qa.accoladeelectronics.com/group-management"
 profile_url: "https://aepl-tcu4g-qa.accoladeelectronics.com/profile"
-api_base_url: "https://aepl-tcu4g-qa.accoladeelectronics.com"
-
+api_base_url: "https://aepl-tcu4g-qa.accoladeelectronics.com:6101"
+api_username: "super.admin@accoladeelectronics.com"
+api_password: "LWj09BEg"
+api_login_endpoint: "/api/user/login"
 ticket_base_url: "https://aepl-tcu4g-qa.accoladeelectronics.com:6109"
 browser: chromium
 headless: false

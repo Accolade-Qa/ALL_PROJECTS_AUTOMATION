@@ -251,16 +251,15 @@ class TestAtcuViewOtaBatchPage:
         assert table_rows, "Expected OTA batch rows to be present."
 
         from api.atcu import AtcuOtaPageAPI
-        result = AtcuOtaPageAPI.get_ota_batch_list(atcu_ota_page.page)
-        batch_ids = result.get("batch_ids", [])
+        _, batch_ids = AtcuOtaPageAPI.get_ota_batch_list(atcu_ota_page.page)
         assert batch_ids, "Expected at least one batch ID from API."
-        batch_id = str(batch_ids[0])
-
-        logger.info("Batch ID to view is: %s", batch_id)
 
         view_button = table.get_action_button(0, "visibility")
         view_button.click()
-        
+
+        batch_id = str(batch_ids[0])
+        AtcuOtaPageAPI.get_ota_batch_kpi(atcu_ota_page.page, batch_ref_id = batch_id)
+
         # Wait for Angular Router client-side navigation
         try:
             atcu_ota_page.page.wait_for_url("**/ota-batch-view/*", wait_until="commit", timeout=5000)

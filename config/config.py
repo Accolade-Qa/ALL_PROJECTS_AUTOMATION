@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 import yaml
@@ -7,7 +8,19 @@ from dotenv import load_dotenv
 ROOT = Path(__file__).resolve().parent
 load_dotenv(dotenv_path=ROOT.parent / ".env")
 
-PROJECT = os.getenv("PROJECT", "lct").lower()
+
+def _get_project():
+    """Resolve the project before loading its project-specific files."""
+    for index, argument in enumerate(sys.argv):
+        if argument == "--project" and index + 1 < len(sys.argv):
+            return sys.argv[index + 1].lower()
+        if argument.startswith("--project="):
+            return argument.split("=", 1)[1].lower()
+
+    return os.getenv("PROJECT", "lct").lower()
+
+
+PROJECT = _get_project()
 PROJECT_ENV_PATH = ROOT / f"{PROJECT}.env"
 if PROJECT_ENV_PATH.exists():
     load_dotenv(dotenv_path=PROJECT_ENV_PATH, override=True)
@@ -127,6 +140,7 @@ API_BASE_URL = _get(
     "API_BASE_URL",
     "http://lct-a4g-qa.accoladeelectronics.com:9090",
 )
+API_LOGIN_ENDPOINT = _get("API_LOGIN_ENDPOINT", "/users/login")
 GOVERNMENT_SERVERS_URL = _get(
     "GOVERNMENT_SERVERS_URL",
     "http://lct-a4g-qa.accoladeelectronics.com/govt-servers",
