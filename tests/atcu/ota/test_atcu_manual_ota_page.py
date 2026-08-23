@@ -14,7 +14,8 @@ logger = get_logger(__name__)
 class TestAtcuManualOtaPage:
     """In-depth test suite for ATCU Manual OTA Page covering top navigation, initial disabled state (search button disabled & Device OTA History List hidden), valid IMEI search enabling components, positive/negative corner scenarios, and exact IMEI field error messages."""
 
-    VALID_IMEI = config._get("IMEI")
+    VALID_IMEI = getattr(config, "IMEI", "863192053020625")
+
 
     # Exact Error Message Definitions per User Requirement Specification
     ERR_BLANK = "This field is required and can't be only spaces."
