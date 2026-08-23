@@ -54,13 +54,16 @@ jobs:
 
   test-and-report:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [atcu, sampark, lct]
     env:
       HEADLESS: 'true'
       PROJECT_INPUT: ${{ github.event.inputs.project }}
       PROJECTS_INPUT: ${{ github.event.inputs.projects }}
       MARKER_INPUT: ${{ github.event.inputs.marker }}
       REPORT_DIR_INPUT: ${{ github.event.inputs.report_dir }}
-      TARGET_REPORT_DIR: ${{ github.event.client_payload.report_dir || github.event.inputs.report_dir || 'reports' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -104,18 +107,19 @@ jobs:
       - name: Run tests and generate reports
         continue-on-error: true
         run: |
-          EVENT_PROJECT="${{ github.event.client_payload.project || github.event.inputs.project || '' }}"
+          INPUT_PROJECT="${{ github.event.client_payload.project || github.event.inputs.project || '' }}"
+          MATRIX_PROJECT="${{ matrix.project }}"
+
+          if [ -n "$INPUT_PROJECT" ] && [ "$INPUT_PROJECT" != "$MATRIX_PROJECT" ]; then
+            echo "Skipping matrix job for $MATRIX_PROJECT because dispatch explicitly requested $INPUT_PROJECT"
+            exit 0
+          fi
+
+          TARGET_PROJECT="${INPUT_PROJECT:-$MATRIX_PROJECT}"
           EVENT_MARKER="${{ github.event.client_payload.marker || github.event.inputs.marker || '' }}"
 
           COMMIT_MSG="${{ github.event.head_commit.message }}"
           echo "Commit Message: $COMMIT_MSG"
-
-          if [ -z "$EVENT_PROJECT" ] && [ -n "$COMMIT_MSG" ]; then
-            PARSED_PROJECT=$(echo "$COMMIT_MSG" | grep -oP '\[project:\s*\K[^\]]+' || true)
-            if [ -n "$PARSED_PROJECT" ]; then
-              EVENT_PROJECT="$PARSED_PROJECT"
-            fi
-          fi
 
           if [ -z "$EVENT_MARKER" ] && [ -n "$COMMIT_MSG" ]; then
             PARSED_MARKER=$(echo "$COMMIT_MSG" | grep -oP '\[marker:\s*\K[^\]]+' || true)
@@ -127,13 +131,10 @@ jobs:
             fi
           fi
 
+          TARGET_REPORT_DIR="reports/$TARGET_PROJECT"
+          echo "TARGET_REPORT_DIR=$TARGET_REPORT_DIR" >> $GITHUB_ENV
 
-          TARGET_REPORT_DIR="${{ env.TARGET_REPORT_DIR }}"
-          ARGS="--report-dir \"$TARGET_REPORT_DIR\""
-
-          if [ -n "$EVENT_PROJECT" ]; then
-            ARGS="$ARGS --project \"$EVENT_PROJECT\""
-          fi
+          ARGS="--report-dir \"$TARGET_REPORT_DIR\" --project \"$TARGET_PROJECT\""
 
           if [ -n "$EVENT_MARKER" ]; then
             ARGS="$ARGS --marker \"$EVENT_MARKER\""
@@ -141,14 +142,19 @@ jobs:
             ARGS="$ARGS --marker smoke"
           fi
 
-
           echo "Executing: python utils/generate_reports.py $ARGS"
           eval python utils/generate_reports.py $ARGS
 
       - name: Verify generated reports
         run: |
-          echo "Checking for report files..."
-          REPORT_FILES=$(find "${{ env.TARGET_REPORT_DIR }}" -type f \( -name 'report.json' -o -name 'report.html' -o -name 'report.xlsx' \) | sort)
+          INPUT_PROJECT="${{ github.event.client_payload.project || github.event.inputs.project || '' }}"
+          MATRIX_PROJECT="${{ matrix.project }}"
+          if [ -n "$INPUT_PROJECT" ] && [ "$INPUT_PROJECT" != "$MATRIX_PROJECT" ]; then
+            exit 0
+          fi
+
+          echo "Checking for report files in $TARGET_REPORT_DIR..."
+          REPORT_FILES=$(find "$TARGET_REPORT_DIR" -type f \( -name 'report.json' -o -name 'report.html' -o -name 'report.xlsx' \) 2>/dev/null | sort)
           echo "$REPORT_FILES"
           if [ -z "$REPORT_FILES" ]; then
             echo "No generated report files found"
@@ -160,8 +166,14 @@ jobs:
         if: always()
         shell: bash
         run: |
+          INPUT_PROJECT="${{ github.event.client_payload.project || github.event.inputs.project || '' }}"
+          MATRIX_PROJECT="${{ matrix.project }}"
+          if [ -n "$INPUT_PROJECT" ] && [ "$INPUT_PROJECT" != "$MATRIX_PROJECT" ]; then
+            exit 0
+          fi
+
           set -e
-          BASE_DIR="${{ env.TARGET_REPORT_DIR }}"
+          BASE_DIR="$TARGET_REPORT_DIR"
           if [ ! -d "$BASE_DIR" ]; then
             echo "Report directory not found: $BASE_DIR"
             exit 0
@@ -184,8 +196,14 @@ jobs:
       - name: Generate Dynamic Email Body
         if: always()
         run: |
+          INPUT_PROJECT="${{ github.event.client_payload.project || github.event.inputs.project || '' }}"
+          MATRIX_PROJECT="${{ matrix.project }}"
+          if [ -n "$INPUT_PROJECT" ] && [ "$INPUT_PROJECT" != "$MATRIX_PROJECT" ]; then
+            exit 0
+          fi
+
           python utils/prepare_email_metadata.py \
-            --report-dir "${{ env.TARGET_REPORT_DIR }}" \
+            --report-dir "$TARGET_REPORT_DIR" \
             --actor "${{ github.triggering_actor || github.actor }}" \
             --run-number "${{ github.run_number }}" \
             --ref "${{ github.ref_name }}" \
@@ -195,7 +213,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: automation-reports
+          name: automation-reports-${{ matrix.project }}
           path: ${{ env.TARGET_REPORT_DIR }}
 
       - name: Send Execution Report Email
@@ -208,8 +226,9 @@ jobs:
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
           subject: >-
-            [CI/CD Notice] Test Execution Report: ${{ github.repository }} | Branch: ${{ github.ref_name }} (Run #${{ github.run_number }})
+            [CI/CD Notice] Test Execution Report (${{ matrix.project }}): ${{ github.repository }} | Branch: ${{ github.ref_name }} (Run #${{ github.run_number }})
           html_body: file://email_body.html
           to: ${{ secrets.TEST_MAIL_TO }}
           from: ${{ secrets.MAIL_FROM }}
           attachments: ${{ steps.report_attachments.outputs.attachments }}
+

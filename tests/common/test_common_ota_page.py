@@ -20,7 +20,8 @@ class TestOtaPage:
     """Test suite for OTA Batch and OTA Master pages."""
 
     # Test data
-    SEARCH_QUERY = "test"
+    SEARCH_QUERY = "SET"
+
 
     @pytest.fixture(autouse=True)
     def log_test_case(self, request, report_case):

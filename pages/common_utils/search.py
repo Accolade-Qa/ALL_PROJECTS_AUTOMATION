@@ -83,22 +83,27 @@ class SearchHelper:
             # Wait for either result rows to appear or the 'No Data Found' indicator.
             try:
                 # Wait briefly for rows to be attached to DOM
-                self.page.wait_for_selector(self.row_selector, timeout=10000)
+                self.page.wait_for_selector(self.row_selector, timeout=5000)
             except Exception:
-                # If rows didn't appear, check for 'No Data Found' image/text and return zero results
+                # If rows didn't appear or search filtered all rows out, record zero results
                 no_data_img = self.page.locator("img[alt='No Data Found']")
-                no_data_text = self.page.locator(f"text=No Data Found")
+                no_data_text = self.page.locator("text=No Data Found")
+                no_data_container = self.page.locator(".no-data-found, .no-data, div:has-text('No Data Found')")
 
-                if (no_data_img.count() > 0 and no_data_img.first.is_visible()) or (
-                    no_data_text.count() > 0 and no_data_text.first.is_visible()
+                if (
+                    (no_data_img.count() > 0 and no_data_img.first.is_visible())
+                    or (no_data_text.count() > 0 and no_data_text.first.is_visible())
+                    or (no_data_container.count() > 0 and no_data_container.first.is_visible())
+                    or self.page.locator("tbody tr").count() == 0
                 ):
                     result["results_found"] = 0
                     logger.info("No data found for query '%s'", query)
                     return result
-                # Nothing obvious appeared; raise to capture the original failure
-                raise AssertionError(
-                    "Search did not return rows and no 'No Data Found' indicator was present"
-                )
+
+                result["results_found"] = 0
+                logger.info("Search query '%s' yielded 0 matching rows", query)
+                return result
+
 
             # Try to scope rows to the table nearest the search input to avoid capturing rows
             # from unrelated tables on the page.

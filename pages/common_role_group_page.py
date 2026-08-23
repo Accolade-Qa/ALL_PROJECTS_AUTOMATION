@@ -56,11 +56,12 @@ class RoleGroupPage:
                 self.page.wait_for_timeout(200)
         except Exception:
             pass
-        btn = self.page.get_by_text("Add Group", exact=True)
+        btn = self.page.locator("button.primary-button, button:has-text('Add Group'), button:has-text('Group')").first
         try:
             btn.click(timeout=5000)
         except Exception:
             btn.click(force=True)
+
 
     def click_save(self):
         logger.info("Clicking Save button")
