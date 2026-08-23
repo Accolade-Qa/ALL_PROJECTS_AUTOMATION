@@ -88,8 +88,9 @@ class TestUserManagementPage:
 
         report_case(expected=expected_title, actual=actual_title, message="Validate User management is PageTitle Visible")
         assert (
-            actual_title == expected_title
+            actual_title.strip() == expected_title
         ), f"Expected title to be '{expected_title}', got '{actual_title}'"
+
         logger.info("Page title visibility test passed successfully")
 
     @pytest.mark.regression

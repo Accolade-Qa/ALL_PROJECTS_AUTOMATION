@@ -34,11 +34,16 @@ if PROJECT_CONFIG_PATH.exists():
 
 
 def _get(key, default=None):
+    env_val = os.getenv(key)
+    if env_val is not None and str(env_val).strip() != "":
+        return env_val
+
     project_value = _PROJECT_CONFIG.get(key.lower())
     if project_value is not None:
         return project_value
 
-    return os.getenv(key, default)
+    return default
+
 
 
 def _get_bool(key, default=False):

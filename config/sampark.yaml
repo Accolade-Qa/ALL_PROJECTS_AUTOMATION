@@ -31,5 +31,9 @@ valid_uin: "ACONSBA102500006341"
 command_to_search: "ABC"
 vin: "VIN001"
 iccid: "89916450244842405755"
-expected_permission_count: 19
+username: "suraj.bhalerao@accoladeelectronics.com"
+api_username: "suraj.bhalerao@accoladeelectronics.com"
+page_title: "AEPL Sampark QA Diagnostic Cloud"
 customer_master_url: "https://sampark-qa.accoladeelectronics.com/customer-master"
+
+

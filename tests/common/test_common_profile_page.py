@@ -129,8 +129,9 @@ class TestProfilePage:
             )
             report_case(expected="User Profile", actual=title, message="Validate Profile page validate page title")
             assert (
-                title == "User Profile"
+                title.strip() == "User Profile"
             ), f"Expected page title to be 'User Profile' but got '{title}'"
+
             logger.info("Profile page title validation test passed")
         except AssertionError as e:
             logger.error("Assertion error during profile page title test: %s", str(e))

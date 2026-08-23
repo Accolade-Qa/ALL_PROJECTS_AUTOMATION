@@ -447,9 +447,30 @@ def page(browser, project_config, user_storage_state):
     # Navigate to base URL - auth tokens are pre-injected into sessionStorage and context cookies
     if page.url == "about:blank":
         page.goto(project_config["base_url"], wait_until="domcontentloaded")
+        try:
+            page.wait_for_load_state("networkidle", timeout=5000)
+        except Exception:
+            pass
+
+    # Fallback: If session expired or redirected to login, re-authenticate automatically
+    if "login" in page.url and project_config.get("username") and project_config.get("password"):
+        try:
+            from pages.common_login_page import LoginPage
+            login = LoginPage(page)
+            if login.username.is_visible(timeout=2000):
+                logger.info("Page redirected to login; re-authenticating for project: %s", project_config["project"])
+                login.login(project_config["username"], project_config["password"])
+                try:
+                    page.wait_for_load_state("networkidle", timeout=10000)
+                except Exception:
+                    pass
+        except Exception as exc:
+            logger.warning("Auto re-login fallback attempt failed: %s", exc)
+
     logger.info("Authenticated page ready: %s", page.url)
 
     yield page
+
 
 
     page.close()

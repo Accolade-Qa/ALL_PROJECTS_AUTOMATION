@@ -40,8 +40,8 @@ role_group_url: "https://aepl-tcu4g-qa.accoladeelectronics.com/group-management"
 profile_url: "https://aepl-tcu4g-qa.accoladeelectronics.com/profile"
 api_base_url: "https://aepl-tcu4g-qa.accoladeelectronics.com:6101"
 api_username: "super.admin@accoladeelectronics.com"
-api_password: "LWj09BEg"
 api_login_endpoint: "/api/user/login"
+
 ticket_base_url: "https://aepl-tcu4g-qa.accoladeelectronics.com:6109"
 browser: chromium
 headless: false
@@ -58,3 +58,5 @@ command_to_search: "GET IMEI"
 vin: "ACCDEV20260727625"
 iccid: "8991102105467614380F"
 expected_permission_count: 16
+page_title: "AEPL TCU4G QA Diagnostic Cloud"
+
