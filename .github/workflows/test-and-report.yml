@@ -1,4 +1,4 @@
-name: Test and Report Workflow
+name: Test Matrix & Email Report Pipeline
 
 on:
   push:
@@ -23,36 +23,14 @@ on:
         description: 'Optional base report directory'
         required: false
         default: 'reports'
+
   repository_dispatch:
     types:
       - run-project-report
 
-env:
-  REPORT_DIR: ${{ github.workspace }}/reports
 jobs:
-  gitleaks:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Create reports directory
-        run: mkdir -p ${{ env.REPORT_DIR }}
-
-      - name: Install Gitleaks CLI
-        run: |
-          VERSION=8.18.2
-          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" | tar -xz -C /tmp
-          sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
-
-      - name: Run Gitleaks Scan
-        continue-on-error: true
-        run: |
-          gitleaks detect --source . --report-path ${{ env.REPORT_DIR }}/gitleaks-report.json --report-format json --verbose || true
-
   test-and-report:
+    name: Test & Report (${{ matrix.project }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -101,7 +79,6 @@ jobs:
 
       - name: Ensure Playwright system dependencies
         run: |
-          # install any missing system dependencies Playwright needs
           npx playwright install-deps || true
 
       - name: Run tests and generate reports
@@ -231,4 +208,3 @@ jobs:
           to: ${{ secrets.TEST_MAIL_TO }}
           from: ${{ secrets.MAIL_FROM }}
           attachments: ${{ steps.report_attachments.outputs.attachments }}
-
