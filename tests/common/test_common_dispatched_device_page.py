@@ -14,8 +14,6 @@ logger = get_logger(__name__)
 
 @pytest.mark.lct
 @pytest.mark.sampark
-@pytest.mark.swaraj
-@pytest.mark.trio
 @pytest.mark.device
 @pytest.mark.regression
 class TestDispatchedDevicePage:

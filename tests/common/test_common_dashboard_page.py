@@ -12,8 +12,6 @@ logger = get_logger(__name__)
 @pytest.mark.usefixtures("project_config")
 @pytest.mark.lct
 @pytest.mark.sampark
-@pytest.mark.swaraj
-@pytest.mark.trio
 class TestDashboardPage:
     @pytest.fixture(autouse=True)
     def _inject_project_config(self, request, project_config):

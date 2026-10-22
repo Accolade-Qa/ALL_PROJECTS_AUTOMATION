@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 import yaml
-from dotenv import load_dotenv
+from dotenv import dotenv_values, load_dotenv
 
 ROOT = Path(__file__).resolve().parent
 load_dotenv(dotenv_path=ROOT.parent / ".env")
@@ -23,14 +23,25 @@ def _get_project():
 PROJECT = _get_project()
 PROJECT_ENV_PATH = ROOT / f"{PROJECT}.env"
 if PROJECT_ENV_PATH.exists():
-    load_dotenv(dotenv_path=PROJECT_ENV_PATH, override=True)
+    for key, value in dotenv_values(PROJECT_ENV_PATH).items():
+        if value is not None and value.strip():
+            os.environ[key] = value
 
-PROJECT_CONFIG_PATH = ROOT / f"{PROJECT}.yaml" 
+PROJECT_CONFIG_PATH = ROOT / f"{PROJECT}.yaml"
+TEST_DATA_CONFIG_PATH = ROOT.parent / "test_data" / PROJECT / "test_data.yaml"
 
 _PROJECT_CONFIG = {}
 if PROJECT_CONFIG_PATH.exists():
     with PROJECT_CONFIG_PATH.open("r", encoding="utf-8") as config_file:
         _PROJECT_CONFIG = yaml.safe_load(config_file) or {}
+
+_TEST_DATA_CONFIG = {}
+if TEST_DATA_CONFIG_PATH.exists():
+    with TEST_DATA_CONFIG_PATH.open("r", encoding="utf-8") as config_file:
+        _TEST_DATA_CONFIG = yaml.safe_load(config_file) or {}
+
+_APP_BASE_URL = os.getenv("BASE_URL") or _PROJECT_CONFIG.get("base_url", "")
+_APP_BASE_URL = str(_APP_BASE_URL).rstrip("/")
 
 
 def _get(key, default=None):
@@ -40,7 +51,21 @@ def _get(key, default=None):
 
     project_value = _PROJECT_CONFIG.get(key.lower())
     if project_value is not None:
+        if isinstance(project_value, str):
+            return project_value.replace("{base_url}", _APP_BASE_URL)
         return project_value
+
+    return default
+
+
+def _get_test_data(key, default=None):
+    env_val = os.getenv(key)
+    if env_val is not None and str(env_val).strip() != "":
+        return env_val
+
+    test_data_value = _TEST_DATA_CONFIG.get(key.lower())
+    if test_data_value is not None:
+        return test_data_value
 
     return default
 
@@ -60,15 +85,15 @@ def _get_bool(key, default=False):
     return default
 
 
-BASE_URL = _get("BASE_URL")
-USERNAME = _get("USERNAME", _get("APP_USERNAME"))
-PASSWORD = _get("PASSWORD", _get("APP_PASSWORD"))
-LOGIN_USER = _get("LOGIN_USER", USERNAME)
-VALID_UID = _get("VALID_UID")
-VALID_UIN = _get("VALID_UIN")
-COMMAND_TO_SEARCH = _get("COMMAND_TO_SEARCH")
-VIN = _get("VIN")
-ICCID = _get("ICCID")
+BASE_URL = _get("LOGIN_URL", _get("BASE_URL"))
+USERNAME = _get("APP_USERNAME", _get("USERNAME"))
+PASSWORD = _get("APP_PASSWORD", _get("PASSWORD"))
+LOGIN_USER = _get_test_data("LOGIN_USER", USERNAME)
+VALID_UID = _get_test_data("VALID_UID")
+VALID_UIN = _get_test_data("VALID_UIN")
+COMMAND_TO_SEARCH = _get_test_data("COMMAND_TO_SEARCH")
+VIN = _get_test_data("VIN")
+ICCID = _get_test_data("ICCID")
 TICKET_BASE_URL = _get(
     "TICKET_BASE_URL", "https://aepl-tcu4g-qa.accoladeelectronics.com:6109"
 )
@@ -79,23 +104,19 @@ HEADLESS = _get_bool("HEADLESS", True)
 SCREENSHOT_ON_FAILURE = _get_bool("SCREENSHOT_ON_FAILURE", True)
 LOG_LEVEL = _get("LOG_LEVEL", "INFO")
 VIDEO_RECORDING = _get_bool("VIDEO_RECORDING", False)
-INVALID_USERNAME = _get("INVALID_USERNAME", "ABCD")
-INVALID_PASSWORD = _get("INVALID_PASSWORD", "12345")
+INVALID_USERNAME = _get_test_data("INVALID_USERNAME", "ABCD")
+INVALID_PASSWORD = _get_test_data("INVALID_PASSWORD", "12345")
 API_USERNAME = _get("API_USERNAME", _get("APP_USERNAME", USERNAME))
 API_PASSWORD = _get("API_PASSWORD", _get("APP_PASSWORD", PASSWORD))
 CUSTOMER = _get("CUSTOMER", "Accolade")
-# Compute a sensible default page title per-project when not provided in YAML or env
-_project_page_title = _PROJECT_CONFIG.get("page_title")
-if _project_page_title:
-    PAGE_TITLE = _get("PAGE_TITLE", _project_page_title)
-else:
-    # Use a project-specific display name: keep legacy 'LCT-A4G' for 'lct',
-    # otherwise capitalize the project key (e.g., 'sampark' -> 'Sampark').
-    display_name = (
-        PROJECT.upper() + " a4g - tarang" if PROJECT == "lct" else PROJECT.capitalize()
-    )
-    PAGE_TITLE = _get("PAGE_TITLE", f"AEPL {display_name} QA Diagnostic Cloud")
-IMEI = _get("IMEI", "866677075606341")
+# Use a project-specific title if supplied with the test data.
+display_name = (
+    PROJECT.upper() + " a4g - tarang" if PROJECT == "lct" else PROJECT.capitalize()
+)
+PAGE_TITLE = _get_test_data(
+    "PAGE_TITLE", f"AEPL {display_name} QA Diagnostic Cloud"
+)
+IMEI = _get_test_data("IMEI", "866677075606341")
 
 
 # -----------------------------------------------
@@ -225,5 +246,5 @@ MANUAL_OTA_URL = _get(
     "MANUAL_OTA_URL",
     "https://aepl-tcu4g-qa.accoladeelectronics.com/manual-ota",
 )
-# Expected permission counts per project (can be overridden in project YAML)
-EXPECTED_PERMISSION_COUNT = int(_get("EXPECTED_PERMISSION_COUNT", 16))
+# Expected permission counts are test data, not project application configuration.
+EXPECTED_PERMISSION_COUNT = int(_get_test_data("EXPECTED_PERMISSION_COUNT", 16))

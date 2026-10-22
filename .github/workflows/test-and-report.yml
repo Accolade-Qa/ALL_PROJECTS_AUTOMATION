@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       project:
-        description: 'Project to run (atcu, lct, sampark, swaraj, trio)'
+        description: 'Project to run (atcu, lct, sampark)'
         required: false
       projects:
         description: 'Comma-separated list of projects, e.g. atcu,lct'
@@ -191,7 +191,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: automation-reports-${{ matrix.project }}
-          path: ${{ env.TARGET_REPORT_DIR }}
+          path: reports/${{ matrix.project }}
 
       - name: Send Execution Report Email
         if: always()

@@ -1,1 +1,0 @@
-# Swaraj project-specific tests

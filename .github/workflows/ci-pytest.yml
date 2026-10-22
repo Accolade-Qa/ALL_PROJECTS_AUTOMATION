@@ -6,8 +6,12 @@ on:
 
 jobs:
   fast-pytest:
-    name: Pytest Verification
+    name: Pytest Verification (${{ matrix.project }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [atcu, lct, sampark]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -40,6 +44,5 @@ jobs:
           python -m playwright install --with-deps chromium
 
       - name: Run fast pytest check
-        continue-on-error: true
         run: |
-          pytest --maxfail=1 --disable-warnings -q -m smoke
+          pytest --maxfail=1 --disable-warnings -q -m smoke --project "${{ matrix.project }}"

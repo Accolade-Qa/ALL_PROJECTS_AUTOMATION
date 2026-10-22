@@ -273,7 +273,7 @@ class TestAeplResponseLogPage:
 
         search_helper = SearchHelper(aepl_response_log_page.page)
 
-        result = search_helper.run_search("ACCDEV07241580731")
+        result = search_helper.run_search("ACCDEV20222589462")
 
         if result["success"]:
             logger.info(

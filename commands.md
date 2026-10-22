@@ -248,14 +248,13 @@ If you're new to this repo:
    playwright install
    ```
 
-2. **Copy & configure `.env`:**
+2. **Configure `config/<project>.env` with credentials** and keep project settings in
+   `config/<project>.yaml`. Test values belong in `test_data/<project>/test_data.yaml`.
    ```bash
-   BASE_URL=https://your-app.com
-   DASHBOARD_URL=https://your-app.com/dashboard
-   APP_USERNAME=testuser
-   APP_PASSWORD=testpass
-   BROWSER=chromium
-   HEADLESS=false
+   APP_USERNAME=your_username
+   APP_PASSWORD=your_password
+   API_USERNAME=your_api_username
+   API_PASSWORD=your_api_password
    ```
 
 3. **Run your first smoke test:**
@@ -268,7 +267,7 @@ If you're new to this repo:
 
    PowerShell — run sequentially (sets `PROJECT` per run):
    ```powershell
-   $projects = 'lct','sampark','swaraj','trio'
+   $projects = 'atcu','lct','sampark'
    foreach ($p in $projects) {
       $env:PROJECT = $p
       python -m pytest tests -q --project $p
@@ -277,7 +276,7 @@ If you're new to this repo:
 
    PowerShell — run in parallel using background jobs:
    ```powershell
-   $projects = 'lct','sampark','swaraj','trio'
+   $projects = 'atcu','lct','sampark'
    $jobs = @()
    foreach ($p in $projects) {
       $jobs += Start-Job -ScriptBlock { param($proj) python -m pytest tests -q --project $proj } -ArgumentList $p
@@ -294,14 +293,14 @@ If you're new to this repo:
 
    Bash (Linux / WSL) — sequential:
    ```bash
-   for p in lct sampark swaraj trio; do
+   for p in atcu lct sampark; do
       PROJECT=$p python -m pytest tests -q --project $p || exit 1
    done
    ```
 
    Bash — parallel with background processes (logs per project):
    ```bash
-   for p in lct sampark swaraj trio; do
+   for p in atcu lct sampark; do
       PROJECT=$p python -m pytest tests -q --project $p > tests_$p.log 2>&1 &
    done
    wait

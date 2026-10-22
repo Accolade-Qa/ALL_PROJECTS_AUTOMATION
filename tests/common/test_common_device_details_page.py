@@ -16,8 +16,6 @@ device_info = {
 @pytest.mark.regression
 @pytest.mark.lct
 @pytest.mark.sampark
-@pytest.mark.swaraj
-@pytest.mark.trio
 class TestDeviceDetailsPage:
     @pytest.fixture(autouse=True)
     def log_test_case(self, request):

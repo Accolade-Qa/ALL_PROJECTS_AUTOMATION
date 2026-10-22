@@ -30,7 +30,7 @@ from utils.logger import enable_file_logging, get_logger
 
 logger = get_logger(__name__)
 
-VALID_PROJECTS = ("atcu", "lct", "sampark", "swaraj", "trio", "all")
+VALID_PROJECTS = ("atcu", "lct", "sampark", "all")
 
 ZOOM_SCRIPT = """
 () => {
@@ -121,7 +121,7 @@ def pytest_addoption(parser):
         "--project",
         action="store",
         default=os.getenv("PROJECT"),
-        help="Project name to select the configuration (atcu, lct, sampark, swaraj, trio, all)",
+        help="Project name to select the configuration (atcu, lct, sampark, all)",
     )
     parser.addoption(
         "--headless",
@@ -142,7 +142,7 @@ def pytest_configure(config):
     if not project:
         for arg in config.args:
             arg_clean = str(arg).replace("\\", "/").lower()
-            for proj in ("atcu", "lct", "sampark", "swaraj", "trio"):
+            for proj in ("atcu", "lct", "sampark"):
                 if f"tests/{proj}/" in arg_clean or f"tests/{proj}" in arg_clean:
                     project = proj
                     break
@@ -171,7 +171,8 @@ def pytest_configure(config):
     if missing:
         raise ValueError(
             f"Missing required config values for project '{project}': "
-            f"{', '.join(missing)}. Check config/{project}.yaml"
+            f"{', '.join(missing)}. Check config/{project}.yaml for app settings "
+            f"and config/{project}.env for credentials."
         )
 
     logger.info("=" * 60)
@@ -200,7 +201,7 @@ def pytest_collection_modifyitems(config, items):
         detected_projects = set()
         for item in items:
             item_path_str = str(item.fspath).replace("\\", "/").lower()
-            for proj in ("atcu", "lct", "sampark", "swaraj", "trio"):
+            for proj in ("atcu", "lct", "sampark"):
                 if f"/tests/{proj}/" in item_path_str:
                     detected_projects.add(proj)
         if len(detected_projects) == 1:
@@ -220,7 +221,7 @@ def pytest_collection_modifyitems(config, items):
 
         item_path_str = str(item.fspath).replace("\\", "/").lower()
         path_project = None
-        for proj in ("atcu", "lct", "sampark", "swaraj", "trio"):
+        for proj in ("atcu", "lct", "sampark"):
             if f"/tests/{proj}/" in item_path_str:
                 path_project = proj
                 break
@@ -337,7 +338,8 @@ def validate_project_config(project_config):
     if missing_keys:
         raise ValueError(
             f"Missing required config keys for project "
-            f"'{project_config['project']}': {', '.join(missing_keys)}"
+            f"'{project_config['project']}': {', '.join(missing_keys)}. Check "
+            f"config/{project_config['project']}.env for credentials."
         )
 
     logger.info("Project config validation passed for %s", project_config["project"])
@@ -359,7 +361,7 @@ def login_page(browser):
 
 # Session-scoped Storage State Fixture (Login once per test session)
 @pytest.fixture(scope="session")
-def user_storage_state(browser, project_config):
+def user_storage_state(playwright_instance, project_config):
     """
     Session-scoped authentication fixture.
     Logs in once per test run per project and captures cookies, localStorage, and sessionStorage.
@@ -368,35 +370,31 @@ def user_storage_state(browser, project_config):
         "Initializing session-scoped storage state for project: %s",
         project_config["project"],
     )
-    context = _new_context_with_zoom(browser, accept_downloads=True)
-    auth_page = context.new_page()
-
-    from pages.common_login_page import LoginPage
-
-    login = LoginPage(auth_page)
-    login.load(project_config["base_url"])
-    login.login(project_config["username"], project_config["password"])
-    auth_page.wait_for_load_state("networkidle")
-
-    # Capture cookies & localStorage state
-    storage_state_data = context.storage_state()
-
-    # Capture sessionStorage state
+    browser_type = getattr(playwright_instance, config_module.BROWSER)
+    auth_browser = browser_type.launch(headless=True)
+    context = _new_context_with_zoom(auth_browser, accept_downloads=True)
     try:
+        auth_page = context.new_page()
+
+        from pages.common_login_page import LoginPage
+
+        login = LoginPage(auth_page)
+        login.load(project_config["base_url"])
+        login.login(project_config["username"], project_config["password"])
+        auth_page.wait_for_load_state("networkidle")
+
+        storage_state_data = context.storage_state()
         session_storage_json = auth_page.evaluate(
             "() => JSON.stringify(sessionStorage)"
         )
-    except Exception as e:
-        logger.warning("Failed to extract sessionStorage during setup: %s", e)
-        session_storage_json = "{}"
+    finally:
+        context.close()
+        auth_browser.close()
 
     logger.info(
         "Session-scoped storage state successfully captured for %s",
         project_config["project"],
     )
-
-    auth_page.close()
-    context.close()
 
     return {
         "storage_state": storage_state_data,

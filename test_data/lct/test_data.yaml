@@ -1,0 +1,11 @@
+invalid_username: ABCD
+invalid_password: "12345"
+login_user: "admin"
+command_to_search: "GET IMEI"
+imei: "866677075606341"
+valid_uid: "ACONSBA102500006341"
+valid_uin: "ACONSBA102500006341"
+vin: "SCVBASE1225014403"
+iccid: "89916450244842405755"
+expected_permission_count: 16
+page_title: "AEPL LCT A4G - TARANG QA Diagnostic Cloud"

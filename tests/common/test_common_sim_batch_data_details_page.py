@@ -11,8 +11,6 @@ TEST_DATA_DIR = Path(__file__).resolve().parents[2] / "test_data" / "lct"
 @pytest.mark.regression
 @pytest.mark.lct
 @pytest.mark.sampark
-@pytest.mark.swaraj
-@pytest.mark.trio
 class TestSimBatchDataDetailsPage:
     @pytest.fixture(autouse=True)
     def log_test_case(self, request):

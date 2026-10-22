@@ -49,44 +49,35 @@ pip install -r requirements.txt
    ```bash
 playwright install
 ```
-6. **Copy the `.env` template** and fill in values for your environment. A minimal example:
-   ```env
-BASE_URL=https://your-app-url.com
-DASHBOARD_URL=https://your-app-url.com/device-dashboard-page
+6. **Configure the project environment file** at `config/<project>.env`. Set credentials there:
+```env
 APP_USERNAME=your_username
 APP_PASSWORD=your_password
-BROWSER=chromium
-HEADLESS=false
-SCREENSHOT_ON_FAILURE=true
-LOG_LEVEL=INFO
-VIDEO_RECORDING=false
+API_USERNAME=your_api_username
+API_PASSWORD=your_api_password
 ```
+Project URLs and browser options are in `config/<project>.yaml`; test inputs are in
+`test_data/<project>/test_data.yaml`. Environment files are ignored by Git.
 
 ## Configuration
 
 | Variable | Description | Suggested values |
 |----------|-------------|------------------|
-| `BASE_URL` | Root URL of the LCT-A4G application | `https://your-app-url.com` |
-| `DASHBOARD_URL` | Device dashboard landing page | `https://your-app-url.com/device-dashboard-page` |
 | `APP_USERNAME` / `APP_PASSWORD` | Credentials used during login tests | --- |
-| `BROWSER` | Playwright browser to launch | `chromium`, `firefox`, `webkit` |
-| `HEADLESS` | Run browser headless? | `true`, `false` |
-| `SCREENSHOT_ON_FAILURE` | Capture failure screenshots | `true`, `false` |
-| `VIDEO_RECORDING` | Retain video on failure | `true`, `false` |
-| `LOG_LEVEL` | Logging verbosity | `DEBUG`, `INFO`, `WARNING`, `ERROR` |
+| `API_USERNAME` / `API_PASSWORD` | Credentials used for API authentication | --- |
 
 Additional browser launch arguments can be injected in `conftest.py` via the `args` list for custom debugging or CI requirements.
 
 ## Multi-project support
 
-The framework supports environment-specific configuration through `config/<project>.yaml` and `test_data/<project>/`.
+The framework supports environment-specific configuration through `config/<project>.yaml`, credentials in `config/<project>.env`,
+and test inputs in `test_data/<project>/test_data.yaml`.
 
 Run the suite for a specific project with:
 ```bash
+pytest --project=atcu
 pytest --project=lct
 pytest --project=sampark
-pytest --project=swaraj
-pytest --project=trio
 ```
 
 A `PROJECT` environment variable may also be used before running tests:

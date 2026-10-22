@@ -8,8 +8,6 @@ logger = get_logger(__name__)
 
 @pytest.mark.lct
 @pytest.mark.sampark
-@pytest.mark.swaraj
-@pytest.mark.trio
 class TestCustomerMaster:
     @pytest.fixture(autouse=True)
     def log_test_case(self, request):

@@ -10,8 +10,6 @@ logger = get_logger(__name__)
 @pytest.mark.regression
 @pytest.mark.lct
 @pytest.mark.sampark
-@pytest.mark.swaraj
-@pytest.mark.trio
 class TestModelPage:
     @pytest.fixture(autouse=True)
     def log_test_case(self, request):
