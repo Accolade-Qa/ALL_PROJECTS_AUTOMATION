@@ -1,5 +1,5 @@
 from config.config import ROLE_MANAGEMENT_URL
-from api.role_management_api import RoleManagementAPI
+from api import APIClient
 from pages.common_utils import TableSection, PaginationHelper
 from utils.helpers import Helpers
 from utils.logger import get_logger
@@ -45,7 +45,8 @@ class TestRoleManagementPage:
     ):
         """Test deleting a role permission."""
         logger.info("Testing delete role permission functionality")
-        result = RoleManagementAPI.delete_roles(role_management_page.page)
+        api = APIClient()
+        result = api.role_management.delete_roles()
         report_case(
             expected=True,
             actual=result.get("success"),

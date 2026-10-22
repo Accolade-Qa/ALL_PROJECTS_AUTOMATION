@@ -1,100 +1,54 @@
-import json
-
+from pathlib import Path
 from utils.logger import get_logger
-from .api_client import APIClient
-from .endpoints import GET_SIM_BATCH_DETAILS_BY_CSV, GET_SIM_BATCH_DETAILS_BY_ICCID
 from test_data.lct.device_data import DeviceData
+from .endpoints import GET_SIM_BATCH_DETAILS_BY_CSV, GET_SIM_BATCH_DETAILS_BY_ICCID
 
 logger = get_logger(__name__)
 
 
-class SIMBatchAPI(APIClient):
-    """API client for SIM batch data operations."""
+class SIMBatchAPI:
+    """SIM batch operations."""
 
-    @staticmethod
-    def get_sim_batch_details_by_csv(page, api_base_url, api_username, api_password):
-        """Fetch SIM batch details from API by ICCID list.
+    def __init__(self, client=None):
+        self._client = client
 
-        Args:
-            page: Playwright page object with request context.
-            api_base_url: Base URL for API.
-            api_username: API username.
-            api_password: API password.
+    def get_sim_batch_details_by_csv(self=None, file_path=None, *args, **kwargs):
+        """Upload Excel/CSV file to fetch SIM batch details."""
+        if not isinstance(self, SIMBatchAPI):
+            from .api_client import APIClient
+            return APIClient.get_default().sim_batch.get_sim_batch_details_by_csv(file_path, *args, **kwargs)
 
-        Returns:
-            dict: SIM batch details from API response.
-        """
-        sim_details_endpoint = GET_SIM_BATCH_DETAILS_BY_CSV
+        if isinstance(file_path, str):
+            pass
+        elif not file_path or hasattr(file_path, "request"):
+            file_path = "./test_data/Sensorise_SIM_data_Details.xlsx"
 
-        with open("./test_data/Sensorise_SIM_data_Details.xlsx", "rb") as f:
+        resolved = Path(file_path)
+        if not resolved.exists():
+            resolved = Path(__file__).resolve().parent.parent / "test_data" / "Sensorise_SIM_data_Details.xlsx"
+
+        with open(resolved, "rb") as f:
             file_content = f.read()
-            multipart = {
-                "file": {
-                    "name": "Sensorise_SIM_data_Details.xlsx",
-                    "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    "buffer": file_content,
-                }
-            }
 
-            logger.info("Fetching SIM batch details from %s", sim_details_endpoint)
-
-            try:
-                sim_details_data = APIClient.send_request(
-                    page,
-                    api_base_url,
-                    api_username,
-                    api_password,
-                    "POST",
-                    sim_details_endpoint,
-                    files=multipart,
-                )
-                logger.info("Successfully fetched SIM batch details")
-                duplicate_rows = sim_details_data.get("duplicateRows", [])
-                sim_details = sim_details_data.get("simDetails", {})
-                errors = sim_details_data.get("errors", [])
-
-                return duplicate_rows, sim_details, errors
-            except Exception as e:
-                logger.error("Failed to fetch SIM batch details: %s", str(e))
-                raise
-
-    @staticmethod
-    def get_sim_batch_by_manual_upload(page, api_base_url, api_username, api_password):
-        """Fetch sim data details from a manual upload iccid
-
-        Args:
-            page: Playwright page object with request context.
-            api_base_url: Base URL for API.
-            api_username: API username.
-            api_password: API password.
-
-        Return:
-            dict: Sim batch details from api response
-        """
-        devices = DeviceData().get_device_data()
-
-        iccid = devices.get("device_3")[1]
-        endpoint = GET_SIM_BATCH_DETAILS_BY_ICCID
-        payload = [iccid]
-        logger.info("Fetching sim data details from %s", endpoint)
-
-        try:
-            sim_data = APIClient.send_request(
-                page,
-                api_base_url,
-                api_username,
-                api_password,
-                "POST",
-                endpoint=endpoint,
-                data=json.dumps(payload),
+        files = {
+            "file": (
+                resolved.name,
+                file_content,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
+        }
+        res = self._client.post(GET_SIM_BATCH_DETAILS_BY_CSV, files=files)
+        return res.get("duplicateRows", []), res.get("simDetails", {}), res.get("errors", [])
 
-            data = sim_data.get("data", {})
+    def get_sim_batch_by_manual_upload(self=None, iccid=None, *args, **kwargs):
+        """Fetch SIM details by ICCID."""
+        if not isinstance(self, SIMBatchAPI):
+            from .api_client import APIClient
+            return APIClient.get_default().sim_batch.get_sim_batch_by_manual_upload(iccid, *args, **kwargs)
 
-            return data
+        if not iccid or hasattr(iccid, "request"):
+            devices = DeviceData().get_device_data()
+            iccid = devices.get("device_3")[1]
 
-        except Exception as e:
-            logger.error(
-                "Failed to fetch sim data details via manual upload: %s", str(e)
-            )
-            raise
+        res = self._client.post(GET_SIM_BATCH_DETAILS_BY_ICCID, json=[iccid])
+        return res.get("data", {})

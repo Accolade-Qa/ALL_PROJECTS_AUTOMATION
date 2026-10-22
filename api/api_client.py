@@ -1,247 +1,164 @@
-"""API Client for authentication and common request handling."""
+"""Central API Client that orchestrates requests to page-specific API modules."""
 
-import json
+import requests
+import urllib3
 from utils.logger import get_logger
 
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logger = get_logger(__name__)
 
 
 class APIClient:
-    """Client for authenticated API requests with centralized token management."""
+    """Central API client that orchestrates requests to page-specific API modules.
 
-    @staticmethod
-    def is_sampark_api(api_base_url):
-        """Return True when the configured API host is the sampark QA deployment."""
-        if not api_base_url:
-            return False
+    Usage in tests:
+        api = APIClient()
+        customers = api.customer.get_customer_list()
+        counts = api.dashboard.get_device_counts()
+        firmwares = api.govt_server.get_all_firmware()
+        user_info = api.user.get_user_data_by_id()
+    """
 
-        normalized_base_url = api_base_url.rstrip("/")
-        return "sampark-qa" in normalized_base_url or normalized_base_url.endswith(
-            "sampark-qa.accoladeelectronics.com"
-        )
+    _default_instance = None
 
-    @staticmethod
-    def is_atcu_api(api_base_url):
-        """Return True when the configured API host is the ATCU deployment."""
-        if not api_base_url:
-            return False
-
-        normalized_base_url = api_base_url.rstrip("/").lower()
-        return "aepl-tcu4g-qa" in normalized_base_url or "6101" in normalized_base_url
-
-
-    @staticmethod
-    def build_endpoint(api_base_url, endpoint):
-        """Normalize an API endpoint for the active project.
-
-        Sampark APIs expose a common ``/api`` prefix while the remaining
-        projects use the unprefixed route name directly. This helper keeps the
-        prefixing decision in one place and allows the individual API modules to
-        stay focused on their business logic.
-        """
-        if not endpoint:
-            return endpoint
-
-        normalized_endpoint = endpoint if endpoint.startswith("/") else f"/{endpoint}"
-
-        requires_api_prefix = APIClient.is_sampark_api(api_base_url)
-        if requires_api_prefix and not normalized_endpoint.startswith("/api/"):
-            return f"/api{normalized_endpoint}"
-
-        return normalized_endpoint
-
-
-    @staticmethod
-    def resolve_api_credentials(page, api_base_url=None, api_username=None, api_password=None):
-        """Resolve API settings from the active project's config and env file."""
+    def __init__(self, base_url=None, username=None, password=None):
         from config import config
 
-        resolved_url = (api_base_url or config.API_BASE_URL).rstrip("/")
-        resolved_username = api_username or config.API_USERNAME
-        resolved_password = api_password or config.API_PASSWORD
+        self.base_url = (base_url or getattr(config, "API_BASE_URL", "")).rstrip("/")
+        self.username = username or getattr(config, "API_USERNAME", "")
+        self.password = password or getattr(config, "API_PASSWORD", "")
+        self.token = None
+        self.user_id = None
 
-        return resolved_url, resolved_username, resolved_password
+        self.session = requests.Session()
+        self.session.verify = False
 
+        # Page-specific API modules orchestrated here
+        from .customer_api import CustomerAPI
+        from .device_dashboard_api import DeviceDashboardAPI
+        from .government_server_api import GovtServerAPI
+        from .login_api import LoginAPI
+        from .role_group_api import RoleGroupAPI
+        from .role_management_api import RoleManagementAPI
+        from .sim_batch_api import SIMBatchAPI
+        from .tml_request_api import TmlRequestAPI
+        from .user_api import UserAPI
+        from .atcu.ota_page_api import AtcuOtaPageAPI
 
+        self.customer = CustomerAPI(self)
+        self.dashboard = DeviceDashboardAPI(self)
+        self.device_dashboard = self.dashboard  # convenient alias
+        self.govt_server = GovtServerAPI(self)
+        self.login_api = LoginAPI(self)
+        self.role_group = RoleGroupAPI(self)
+        self.role_management = RoleManagementAPI(self)
+        self.sim_batch = SIMBatchAPI(self)
+        self.tml = TmlRequestAPI(self)
+        self.user = UserAPI(self)
+        self.ota = AtcuOtaPageAPI(self)
 
-    @staticmethod
-    def get_bearer_token(page, api_base_url=None, api_username=None, api_password=None):
-        """Authenticate with API and retrieve bearer token.
+    @classmethod
+    def get_default(cls):
+        """Get or create shared default client instance."""
+        if cls._default_instance is None:
+            cls._default_instance = cls()
+        return cls._default_instance
 
-        Args:
-            page: Playwright page object with request context.
-            api_base_url: Base URL for API.
-            api_username: API username.
-            api_password: API password.
+    def _build_url(self, endpoint):
+        endpoint = str(endpoint).strip()
+        if endpoint.startswith("http"):
+            return endpoint
+        if not endpoint.startswith("/"):
+            endpoint = f"/{endpoint}"
+        if "sampark-qa" in self.base_url.lower() and not endpoint.startswith("/api/"):
+            endpoint = f"/api{endpoint}"
+        return f"{self.base_url}{endpoint}"
 
-        Returns:
-            str: Bearer token for subsequent API requests.
-        """
-        api_base_url, api_username, api_password = APIClient.resolve_api_credentials(
-            page, api_base_url, api_username, api_password
-        )
-
-
+    def login(self):
+        """Authenticate and set Bearer token on the session."""
         from config import config
 
         login_endpoint = getattr(config, "API_LOGIN_ENDPOINT", "/users/login")
-        login_url = f"{api_base_url}{APIClient.build_endpoint(api_base_url, login_endpoint)}"
+        url = self._build_url(login_endpoint)
+        payload = {"userEmail": self.username, "password": self.password}
 
-        login_payload = {
-            "userEmail": api_username,
-            "password": api_password,
-        }
+        logger.info("Logging in to API as %s", self.username)
+        response = self.session.post(url, json=payload, timeout=20)
+        if not response.ok:
+            raise Exception(f"API Login failed [{response.status_code}]: {response.text}")
 
-        logger.info("Logging in to API user %s at %s", api_username, login_url)
-        try:
-            login_response = page.request.post(
-                login_url,
-                data=json.dumps(login_payload),
-                headers={"Content-Type": "application/json"},
-            )
+        data = response.json()
+        token = data.get("data", {}).get("token") or data.get("token")
+        self.user_id = data.get("data", {}).get("id")
+        self.token = token
+        self.session.headers.update({
+            "Authorization": f"Bearer {self.token}",
+            "token": self.token,
+            "Content-Type": "application/json",
+        })
+        return data.get("data", {})
 
-            if not login_response.ok:
-                response_text = login_response.text()
-                logger.error(
-                    "API login failed with status %s: %s",
-                    login_response.status,
-                    response_text,
-                )
-                raise Exception(
-                    f"API login failed: {login_response.status} {response_text}"
-                )
+    def get_user_id(self):
+        """Get ID of the logged in user."""
+        if not self.user_id:
+            self.login()
+        return self.user_id
 
-            login_data = login_response.json()
-            token = login_data.get("data", {}).get("token") or login_data.get("token")
-            if token:
-                logger.info("API login succeeded, acquired bearer token")
-                return token
+    def get(self, endpoint, params=None):
+        """Send GET request."""
+        if not self.token:
+            self.login()
+        url = self._build_url(endpoint)
+        response = self.session.get(url, params=params, timeout=25)
+        if response.status_code == 401:
+            self.login()
+            response = self.session.get(url, params=params, timeout=25)
+        return response.json() if response.text else {}
 
-            raise Exception(f"API login response did not contain a bearer token: {login_data}")
-        except Exception as e:
-            logger.error("API login request failed: %s", str(e))
-            raise Exception(
-                f"Failed to retrieve API bearer token from {login_url}: {e}"
-            ) from e
+    def post(self, endpoint, json=None, data=None, files=None):
+        """Send POST request."""
+        if not self.token:
+            self.login()
+        url = self._build_url(endpoint)
+        headers = None
+        if files:
+            headers = {"Authorization": f"Bearer {self.token}", "token": self.token}
+        response = self.session.post(url, json=json, data=data, files=files, headers=headers, timeout=25)
+        if response.status_code == 401:
+            self.login()
+            response = self.session.post(url, json=json, data=data, files=files, headers=headers, timeout=25)
+        return response.json() if response.text else {}
 
+    def delete(self, endpoint):
+        """Send DELETE request."""
+        if not self.token:
+            self.login()
+        url = self._build_url(endpoint)
+        response = self.session.delete(url, timeout=25)
+        if response.status_code == 401:
+            self.login()
+            response = self.session.delete(url, timeout=25)
+        return response.json() if response.text else {}
 
-    @staticmethod
-    def get_request_headers(
-        page,
-        api_base_url,
-        api_username,
-        api_password,
-        extra_headers=None,
-        include_json_content_type=True,
-        token=None,
-    ):
-        if token is None:
-            token = APIClient.get_bearer_token(
-                page,
-                api_base_url,
-                api_username,
-                api_password,
-            )
+    # Backward compatibility helpers
+    @classmethod
+    def send_request(cls, *args, **kwargs):
+        inst = cls.get_default()
+        endpoint = args[0] if (args and isinstance(args[0], str)) else (args[5] if len(args) >= 6 else kwargs.get("endpoint", ""))
+        method = args[1] if (args and len(args) > 1 and isinstance(args[1], str)) else (args[4] if len(args) >= 6 else kwargs.get("method", "GET"))
+        if method.upper() == "GET":
+            return inst.get(endpoint)
+        elif method.upper() == "POST":
+            return inst.post(endpoint, json=kwargs.get("json", kwargs.get("data")), files=kwargs.get("files"))
+        elif method.upper() == "DELETE":
+            return inst.delete(endpoint)
+        return inst.get(endpoint)
 
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "token": token
-        }
+    @classmethod
+    def build_endpoint(cls, base_url, endpoint):
+        return cls.get_default()._build_url(endpoint)
 
-        if include_json_content_type:
-            headers["Content-Type"] = "application/json"
-
-
-        if extra_headers:
-            headers.update(extra_headers)
-
-        return headers
-
-    @staticmethod
-    def send_request(
-        page, api_base_url, api_username, api_password, method, endpoint, **kwargs
-    ):
-        """Send an authenticated API request."""
-
-        api_base_url, api_username, api_password = APIClient.resolve_api_credentials(
-            page, api_base_url, api_username, api_password
-        )
-        endpoint = APIClient.build_endpoint(api_base_url, endpoint)
-
-        headers = kwargs.pop("headers", None)
-
-        files = kwargs.pop("files", None)
-        if files is not None:
-            kwargs["multipart"] = files
-
-        include_json_content_type = files is None
-
-        # Use supplied token if available
-        token = kwargs.pop("token", None)
-
-        headers = APIClient.get_request_headers(
-            page,
-            api_base_url,
-            api_username,
-            api_password,
-            extra_headers=headers,
-            include_json_content_type=include_json_content_type,
-            token=token,
-        )
-
-        url = f"{api_base_url}{endpoint}"
-
-        logger.info("Sending %s request to %s", method, endpoint)
-
-        method_upper = method.upper()
-
-        if method_upper == "GET":
-            response = page.request.get(url, headers=headers, **kwargs)
-        elif method_upper == "POST":
-            response = page.request.post(url, headers=headers, **kwargs)
-        elif method_upper == "PUT":
-            response = page.request.put(url, headers=headers, **kwargs)
-        elif method_upper == "PATCH":
-            response = page.request.patch(url, headers=headers, **kwargs)
-        elif method_upper == "DELETE":
-            response = page.request.delete(url, headers=headers, **kwargs)
-        else:
-            raise ValueError(f"Unsupported HTTP method: {method}")
-
-        if response.ok:
-            logger.info("API request succeeded with status %s", response.status)
-
-            if response.status == 204:
-                return {}
-
-            try:
-                return response.json()
-            except json.JSONDecodeError as decode_err:
-                response_text = response.text()
-
-                if not response_text or response_text.isspace():
-                    return {}
-
-                logger.error(
-                    "Failed to parse JSON response from %s: %s",
-                    endpoint,
-                    response_text,
-                )
-
-                raise Exception(
-                    f"API request to {endpoint} returned invalid JSON: "
-                    f"{decode_err}. Response body: {response_text}"
-                ) from decode_err
-
-        response_text = response.text()
-
-        logger.warning(
-            "API request to %s failed with status %s: %s",
-            endpoint,
-            response.status,
-            response_text,
-        )
-
-        raise Exception(
-            f"API request to {endpoint} failed: {response.status} {response_text}"
-        )
+    @classmethod
+    def resolve_api_credentials(cls, page=None, api_base_url=None, api_username=None, api_password=None):
+        inst = cls.get_default()
+        return inst.base_url, inst.username, inst.password

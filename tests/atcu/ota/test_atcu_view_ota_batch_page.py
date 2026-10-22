@@ -2,6 +2,7 @@ import re
 
 import pytest
 from playwright.sync_api import expect
+from api import APIClient
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -250,15 +251,15 @@ class TestAtcuViewOtaBatchPage:
         table_rows = table.get_table_data()
         assert table_rows, "Expected OTA batch rows to be present."
 
-        from api.atcu import AtcuOtaPageAPI
-        _, batch_ids = AtcuOtaPageAPI.get_ota_batch_list(atcu_ota_page.page)
+        api = APIClient()
+        _, batch_ids = api.ota.get_ota_batch_list()
         assert batch_ids, "Expected at least one batch ID from API."
 
         view_button = table.get_action_button(0, "visibility")
         view_button.click()
 
         batch_id = str(batch_ids[0])
-        AtcuOtaPageAPI.get_ota_batch_kpi(atcu_ota_page.page, batch_ref_id = batch_id)
+        api.ota.get_ota_batch_kpi(batch_ref_id=batch_id)
 
         # Wait for Angular Router client-side navigation
         try:

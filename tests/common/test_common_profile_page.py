@@ -1,5 +1,5 @@
 from utils.logger import get_logger
-from api.user_api import UserAPI
+from api import APIClient
 from config.config import EXPECTED_PERMISSION_COUNT
 
 import pytest
@@ -260,13 +260,13 @@ class TestProfilePage:
         have correct values matching the actual data from API.
         """
 
-        user_api = UserAPI()
+        api = APIClient()
 
         logger.info("Testing profile page input fields values validation")
 
         try:
             # Fetch user data from API
-            user_data = user_api.get_user_data_by_id(profile_page.page)
+            user_data = api.user.get_user_data_by_id()
             logger.debug("Fetched user data from API: %s", user_data)
 
             # Get input fields from profile page

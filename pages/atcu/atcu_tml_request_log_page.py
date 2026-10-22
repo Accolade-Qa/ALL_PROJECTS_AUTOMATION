@@ -1,6 +1,6 @@
 from utils.helpers import Helpers
 from pages.common_base_page import BasePage
-from api.tml_request_api import TmlRequestApi
+from api import APIClient
 from pages.common_utils import SearchHelper, TableSection, PaginationHelper
 import asyncio
 import threading
@@ -96,10 +96,8 @@ class AtcuTmlRequestLogPage(BasePage):
 
         logger.info("Fetching payload values from the TML Request Log API")
 
-        tml_request_api = TmlRequestApi()
-        payload, VIN, UIN, ICCID, ticket_number, data = tml_request_api.post_tml_request_log(
-            self.page
-        )
+        tml_client = APIClient()
+        payload, VIN, UIN, ICCID, ticket_number, data = tml_client.tml.post_tml_request_log()
 
         logger.debug(
             "Retrieved payload from API: %s, VIN: %s, UIN: %s, ICCID: %s, Ticket Number: %s, Data: %s",
@@ -313,7 +311,8 @@ class AtcuTmlRequestLogPage(BasePage):
                 }
             )
 
-        token = TmlRequestApi.get_token()
+        api = APIClient()
+        token = api.tml.get_token()
 
         headers = {
             "Content-Type": "application/json",

@@ -1,87 +1,44 @@
 from urllib.parse import quote
-
 from utils.logger import get_logger
-
-from ..api_client import APIClient
 from ..endpoints import GET_ATCU_OTA_BATCH_KPI, GET_ATCU_OTA_BATCH_LIST
 
 logger = get_logger(__name__)
 
-from config import config
 
-class AtcuOtaPageAPI(APIClient):
-	"""API client for ATCU OTA batch list and KPI data."""
+class AtcuOtaPageAPI:
+    """ATCU OTA operations."""
 
-	BASE_URL = config.API_BASE_URL
-	USERNAME = config.API_USERNAME
-	PASSWORD = config.API_PASSWORD
+    def __init__(self, client=None):
+        self._client = client
 
-	@staticmethod
-	def get_ota_batch_list(
-		page,
-		page_no=1,
-		size=10,
-		search="",
-		api_base_url=BASE_URL,
-		api_username=USERNAME,
-		api_password=PASSWORD,
-	):
-		"""Return the OTA batch list response."""
+    def get_ota_batch_list(self=None, page_no=1, size=10, search="", *args, **kwargs):
+        """Fetch OTA batch list."""
+        if not isinstance(self, AtcuOtaPageAPI):
+            from ..api_client import APIClient
+            return APIClient.get_default().ota.get_ota_batch_list(page_no, size, search, *args, **kwargs)
 
-		endpoint = GET_ATCU_OTA_BATCH_LIST.format(
-			page_no=page_no,
-			size=size,
-			search=quote(search, safe=""),
-		)
-		logger.info("Fetching ATCU OTA batch list from %s", endpoint)
-		logger.debug("username and password %s %s", api_username, api_password)
-		result = APIClient.send_request(
-			page,
-			api_base_url,
-			api_username,
-			api_password,
-			"GET",
-			endpoint,
-		)
-		batch_device_data = result.get("data", {}).get("batchDeviceData", [])
-		batch_ids = [
-			batch["_id"]
-			for batch in batch_device_data
-			if isinstance(batch, dict) and batch.get("_id")
-		]
-		return result, batch_ids
+        endpoint = GET_ATCU_OTA_BATCH_LIST.format(page_no=page_no, size=size, search=quote(search, safe=""))
+        result = self._client.get(endpoint)
+        batches = result.get("data", {}).get("batchDeviceData", [])
+        batch_ids = [b["_id"] for b in batches if isinstance(b, dict) and b.get("_id")]
+        return result, batch_ids
 
+    def get_ota_batch_kpi(self=None, batch_ref_id=None, *args, **kwargs):
+        """Fetch OTA batch KPI."""
+        if not isinstance(self, AtcuOtaPageAPI):
+            from ..api_client import APIClient
+            return APIClient.get_default().ota.get_ota_batch_kpi(batch_ref_id, *args, **kwargs)
 
-	@staticmethod
-	def get_ota_batch_kpi(
-		page,
-		batch_ref_id,
-		page_no=1,
-		size=10,
-		search="",
-		kpi_selected="All",
-		api_base_url=BASE_URL,
-		api_username=USERNAME,
-		api_password=PASSWORD,
-	):
-		"""Fetch KPI data for one OTA batch reference ID."""
-		if not batch_ref_id:
-			raise ValueError("batch_ref_id must be provided")
-
-		endpoint = GET_ATCU_OTA_BATCH_KPI.format(
-			page_no=page_no,
-			size=size,
-			search=quote(search, safe=""),
-			batch_ref_id=quote(str(batch_ref_id), safe=""),
-			kpi_selected=quote(kpi_selected, safe=""),
-		)
-		logger.info("Fetching ATCU OTA batch KPI for batchRefId=%s", batch_ref_id)
-		return APIClient.send_request(
-			page,
-			api_base_url,
-			api_username,
-			api_password,
-			"GET",
-			endpoint,
-		)
-
+        for a in args:
+            if isinstance(a, (int, str)) and not hasattr(a, "request"):
+                batch_ref_id = a
+                break
+        batch_ref_id = kwargs.get("batch_ref_id", batch_ref_id)
+        endpoint = GET_ATCU_OTA_BATCH_KPI.format(
+            page_no=kwargs.get("page_no", 1),
+            size=kwargs.get("size", 10),
+            search=quote(kwargs.get("search", ""), safe=""),
+            batch_ref_id=quote(str(batch_ref_id or ""), safe=""),
+            kpi_selected=quote(kwargs.get("kpi_selected", "All"), safe=""),
+        )
+        return self._client.get(endpoint)

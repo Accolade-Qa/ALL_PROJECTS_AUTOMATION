@@ -969,35 +969,74 @@ def api_context(project_config):
 
 
 @pytest.fixture
-def sim_batch_api(page, api_context):
-    from api.sim_batch_api import SIMBatchAPI
+def api():
+    """Unified API client providing access to all API operations."""
+    from api import APIClient
+    return APIClient.get_default()
 
+
+@pytest.fixture
+def api_client():
+    """Unified API client providing access to all API operations."""
+    from api import APIClient
+    return APIClient.get_default()
+
+
+@pytest.fixture
+def sim_batch_api():
+    from api.sim_batch_api import SIMBatchAPI
     return SIMBatchAPI
 
 
 @pytest.fixture
-def customer_api(page, api_context):
+def customer_api():
     from api.customer_api import CustomerAPI
-
     return CustomerAPI
 
 
 @pytest.fixture
-def device_dashboard_api(page, api_context):
+def device_dashboard_api():
     from api.device_dashboard_api import DeviceDashboardAPI
-
     return DeviceDashboardAPI
 
 
 @pytest.fixture
-def login_api_fixture(page, api_context):
+def login_api_fixture():
     from api.login_api import LoginAPI
-
     return LoginAPI
 
 
 @pytest.fixture
-def govt_server_api(page, api_context):
+def govt_server_api():
     from api.government_server_api import GovtServerAPI
-
     return GovtServerAPI
+
+
+@pytest.fixture
+def role_group_api():
+    from api.role_group_api import RoleGroupAPI
+    return RoleGroupAPI
+
+
+@pytest.fixture
+def role_management_api():
+    from api.role_management_api import RoleManagementAPI
+    return RoleManagementAPI
+
+
+@pytest.fixture
+def user_api():
+    from api.user_api import UserAPI
+    return UserAPI
+
+
+@pytest.fixture
+def tml_request_api():
+    from api.tml_request_api import TmlRequestAPI
+    return TmlRequestAPI
+
+
+@pytest.fixture
+def atcu_ota_api():
+    from api.atcu import AtcuOtaPageAPI
+    return AtcuOtaPageAPI

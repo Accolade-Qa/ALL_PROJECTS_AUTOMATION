@@ -1,5 +1,5 @@
 from datetime import datetime
-from api.role_group_api import RoleGroupAPI
+from api import APIClient
 from utils.helpers import Helpers
 from pages.common_utils import TableSection, SearchHelper
 from utils.logger import get_logger
@@ -47,7 +47,8 @@ class TestRoleGroupPage:
     def test_role_group_page_delete_roles_api(self, role_group_page, report_case):
         """Test deleting a role permission."""
         logger.info("Testing delete role permission functionality")
-        result = RoleGroupAPI.delete_role_groups(role_group_page.page)
+        api = APIClient()
+        result = api.role_group.delete_role_groups()
         report_case(
             expected=True,
             actual=result.get("success"),

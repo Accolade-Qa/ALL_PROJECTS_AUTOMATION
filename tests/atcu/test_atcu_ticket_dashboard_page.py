@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime, timezone, timedelta
 
 from utils.logger import get_logger
-from api.tml_request_api import TmlRequestAPI
+from api import APIClient
 
 logger = get_logger(__name__)
 
@@ -611,7 +611,8 @@ class TestTicketDashboardPage:
         logger.info("Validating UI KPI Card counts against /api/crm/getDashCounts API endpoint")
         ui_counts = atcu_ticket_dashboard_page.get_all_kpi_counts()
 
-        api_response = TmlRequestAPI.get_dash_counts()
+        api = APIClient()
+        api_response = api.tml.get_dash_counts()
         api_data = api_response.get("data", {}) if isinstance(api_response, dict) else {}
 
         api_all = api_data.get("all", 0) if isinstance(api_data, dict) else 0
@@ -644,16 +645,17 @@ class TestTicketDashboardPage:
         initial_ui_in_progress = atcu_ticket_dashboard_page.get_kpi_card_count("IN PROGRESS")
         initial_ui_on_hold = atcu_ticket_dashboard_page.get_kpi_card_count("ON HOLD")
 
-        pre_api_resp = TmlRequestAPI.get_dash_counts()
+        api = APIClient()
+        pre_api_resp = api.tml.get_dash_counts()
         pre_api_data = pre_api_resp.get("data", {}) if isinstance(pre_api_resp, dict) else {}
         pre_api_all = pre_api_data.get("all", 0)
 
-        payload, VIN, UIN, ICCID, ticket_number, data = TmlRequestAPI.post_tml_request_log()
+        payload, VIN, UIN, ICCID, ticket_number, data = api.tml.post_tml_request_log()
         search_term = ticket_number or VIN or UIN or (payload[0].get("VIN_NO") if payload else "")
         logger.info("Ticket API generated info: ticket_number='%s', VIN='%s', UIN='%s' | search_term='%s'", ticket_number, VIN, UIN, search_term)
         assert search_term, "Ticket generation API failed to return ticket details (TICKET_NO / VIN / UIN)"
 
-        post_api_resp = TmlRequestAPI.get_dash_counts()
+        post_api_resp = api.tml.get_dash_counts()
         post_api_data = post_api_resp.get("data", {}) if isinstance(post_api_resp, dict) else {}
         post_api_all = post_api_data.get("all", 0)
 

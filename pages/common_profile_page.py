@@ -1,5 +1,5 @@
 from .common_base_page import BasePage
-from api.login_api import LoginAPI
+from api import APIClient
 from utils.logger import get_logger
 from config.config import (
     API_BASE_URL,
@@ -17,11 +17,11 @@ class ProfilePage(BasePage):
         super().__init__(page)
 
     def get_login_data(self):
-        """Fetch login data using LoginAPI client."""
-        logger.info("Fetching login data using LoginAPI client")
+        """Fetch login data using APIClient."""
+        logger.info("Fetching login data using APIClient")
         try:
-            login_data = LoginAPI.login(
-                self.page,
+            api = APIClient()
+            login_data = api.login_api.login(
                 username=USERNAME,
                 password=PASSWORD,
                 api_base_url=API_BASE_URL,

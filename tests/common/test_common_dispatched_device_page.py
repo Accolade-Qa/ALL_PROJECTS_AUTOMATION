@@ -5,7 +5,7 @@ from pages.common_utils.search import SearchHelper
 from test_data.lct.device_data import DeviceData
 from utils.logger import get_logger
 from pages.common_base_page import BasePage
-from api.customer_api import CustomerAPI
+from api import APIClient
 from config.config import DISPATCHED_DEVICE_URL
 
 import pytest
@@ -449,7 +449,8 @@ class TestDispatchedDevicePage:
 
         logger.debug("Fetching customer list from API")
 
-        list_of_customers = CustomerAPI.get_customer_list(dispatched_device_page.page)
+        api = APIClient()
+        list_of_customers = api.customer.get_customer_list()
 
         # All added because on ui dropdown first option is All and then followed by customer list from api
         list_of_customers.insert(0, "All")
@@ -504,7 +505,8 @@ class TestDispatchedDevicePage:
 
         logger.debug("Fetching customer list from API")
 
-        list_of_customers = CustomerAPI.get_customer_list(dispatched_device_page.page)
+        api = APIClient()
+        list_of_customers = api.customer.get_customer_list()
 
         # All added because on ui dropdown first option is All and then followed by customer list from api
         list_of_customers.insert(0, "All")
@@ -977,7 +979,8 @@ class TestDispatchedDevicePage:
 
         logger.debug("Fetching customer list from API")
 
-        list_of_customers = CustomerAPI.get_customer_list(dispatched_device_page.page)
+        api = APIClient()
+        list_of_customers = api.customer.get_customer_list()
 
         logger.info(
             "Customer list fetched successfully from API | total customers=%s",
@@ -1160,8 +1163,8 @@ class TestDispatchedDevicePage:
         valid_uid = device_valid_uin_list[randint(0, len(device_valid_uin_list) - 1)]
 
         # add random customer name and then use here
-        from api.customer_api import CustomerAPI
-        _, customer = CustomerAPI.save_customer(dispatched_device_page.page)
+        api = APIClient()
+        _, customer = api.customer.save_customer()
 
         dispatched_device_page.page.reload()
         dispatched_device_page.page.wait_for_load_state("networkidle")

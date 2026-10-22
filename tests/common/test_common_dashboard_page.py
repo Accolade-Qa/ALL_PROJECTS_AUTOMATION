@@ -1,4 +1,4 @@
-from api import DeviceDashboardAPI
+from api import APIClient
 from pages.common_base_page import BasePage
 from utils.logger import get_logger
 
@@ -160,7 +160,8 @@ class TestDashboardPage:
         self, page, dashboard_page, report_case
     ):
         logger.info("Verifying dashboard card counts against API")
-        api_results = DeviceDashboardAPI.get_device_counts(page)
+        api = APIClient()
+        api_results = api.dashboard.get_device_counts()
         logger.debug("Dashboard API card counts: %s", api_results)
         actual_results = {}
         for i, title in enumerate(api_results.keys()):

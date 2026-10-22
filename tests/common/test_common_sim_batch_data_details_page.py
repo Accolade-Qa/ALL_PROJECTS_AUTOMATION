@@ -417,7 +417,8 @@ class TestSimBatchDataDetailsPage:
     # page.wait_for_load_state("networkidle")
 
     # # Fetch API data
-    # api_data = SIMBatchAPI.get_sim_batch_details_by_csv(page)
+    # api = APIClient()
+    # api_data = api.sim_batch.get_sim_batch_details_by_csv(file_path=...)
 
     # # Validate UI vs API
     # sim_data_details_page.validate_tables_against_api(api_data)
