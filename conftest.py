@@ -80,7 +80,7 @@ def browser(playwright_instance, request):
             "--disable-dev-shm-usage",
             "--no-sandbox",
             "--disable-setuid-sandbox",
-            "--window-size=1920,1080",
+            # "--window-size=1920,1080",
         ]
     else:
         launch_args = ["--start-maximized"]
