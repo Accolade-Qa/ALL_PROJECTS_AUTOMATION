@@ -267,6 +267,7 @@ def project_config():
         "user_management_url": config_module.USER_MANAGEMENT_URL,
         "government_servers_url": config_module.GOVERNMENT_SERVERS_URL,
         "dispatched_device_url": config_module.DISPATCHED_DEVICE_URL,
+        "add_dispatched_device" : config_module.ADD_DISPATCHED_DEVICE,
         "dealer_fota_url": config_module.DEALER_FOTA_URL,
         "profile_url": config_module.PROFILE_URL,
         "customer_master_url": config_module.CUSTOMER_MASTER_URL,

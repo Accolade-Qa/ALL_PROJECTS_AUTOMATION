@@ -242,4 +242,4 @@ class AtcuDeviceStateConfigPage(BasePage):
         )
         result = pagination.verify()
         logger.debug("Response table pagination validation result: %s", result)
-        return result
+        return result

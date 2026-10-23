@@ -24,7 +24,7 @@ class AtcuDashboardPage(DashboardPage):
             pass
 
         # If page is still not on dashboard or graph section is not visible, click navbar dropdown link
-        if "device-dashboard" not in self.page.url or not self.page.locator(".graph-section, .graph-card").is_visible():
+        if "device-dashboard" not in self.page.url or not self.page.locator(".graph-section, .graph-card").first.is_visible():
             logger.info("Using navbar navigation to switch to Device Dashboard")
             try:
                 self.page.locator("a.dropdown-toggle:has-text('Dashboard')").first.click()
@@ -33,7 +33,7 @@ class AtcuDashboardPage(DashboardPage):
             except Exception as nav_err:
                 logger.error("Navbar navigation failed: %s", nav_err)
 
-        # Wait for graph section or cards to be visible
+        # Wait for graphs and cards to be visible
         try:
             self.page.locator(".graph-section, .kpi-section, .graph-card").first.wait_for(state="visible", timeout=15000)
         except Exception as vis_err:
@@ -45,13 +45,10 @@ class AtcuDashboardPage(DashboardPage):
 
     def click_state_wise_graph_card(self, graph_title="State Wise Details"):
         logger.info("Clicking graph card with title: %s", graph_title)
-        try:
-            self.page.locator(".graph-section, .graph-card").first.wait_for(state="visible", timeout=15000)
-        except Exception:
-            pass
-
         graph_locator = self.page.locator(
-            f".graph-card:has-text('{graph_title}'), h3.graph-title:has-text('{graph_title}'), .graph-title:has-text('{graph_title}')"
+            f".graph-card:has-text('{graph_title}'), "
+            f"h3.graph-title:has-text('{graph_title}'), "
+            f".graph-title:has-text('{graph_title}')"
         ).first
         graph_locator.wait_for(state="visible", timeout=15000)
         graph_locator.scroll_into_view_if_needed()
@@ -59,7 +56,7 @@ class AtcuDashboardPage(DashboardPage):
         self.page.wait_for_load_state("networkidle", timeout=10000)
         logger.info("Successfully clicked graph card: %s", graph_title)
 
-    def get_state_wise_table_title(self):
+    def get_state_wise_table_title(self, graph_title="State Wise Details"):
         logger.info("Retrieving component table title after graph card click")
         title_locator = self.page.locator(".component-title").first
         title_locator.wait_for(state="visible", timeout=10000)
@@ -92,6 +89,26 @@ class AtcuDashboardPage(DashboardPage):
         except Exception as e:
             logger.warning("IMEI '%s' not found in table within %s ms: %s", imei, timeout, e)
             return False
+
+    def get_imei_row_state_details(self, imei):
+        logger.info("Getting State Wise Details row for IMEI '%s'", imei)
+        row = self.page.locator("table tbody tr").filter(has_text=str(imei)).first
+        row.wait_for(state="visible", timeout=10000)
+
+        headers = [
+            header.inner_text().strip()
+            for header in self.page.locator("table thead th").all()
+        ]
+        values = [cell.inner_text().strip() for cell in row.locator("td").all()]
+        if len(headers) != len(values):
+            raise ValueError(
+                f"State Wise Details row has {len(values)} cells but "
+                f"{len(headers)} column headers"
+            )
+
+        row_details = dict(zip(headers, values))
+        logger.info("State Wise Details row for IMEI '%s': %s", imei, row_details)
+        return row_details
 
     def click_installed_device_card(self, card_title="Installed"):
         logger.info("Clicking KPI card with title: %s", card_title)
@@ -191,5 +208,3 @@ class AtcuDashboardPage(DashboardPage):
             logger.info("Successfully clicked Dispatched Devices KPI card")
         except Exception as e:
             logger.error("Failed to click Dispatched Devices KPI card: %s", e)
-
-

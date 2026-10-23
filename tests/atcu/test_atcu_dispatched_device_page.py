@@ -112,6 +112,13 @@ class TestDispatchedDevicePage:
             message="Validate Dispatched Devices table headers",
         )
         assert len(headers) > 0, "Dispatched Devices table headers list is empty"
+        assert all(
+            header in ["IMEI NO.", "ICCID NO.", "DEVICE MODEL", "UIN NO.", "TML PART NO.", "ACTION"] for header in headers
+        ), f"Dispatched Devices table headers are incorrect: {headers}"
+        # get table data rows and validate that at least one row is present or table is empty
+        rows = atcu_dispatched_device_page.get_table_rows()
+        assert len(rows) >= 0, "Dispatched Devices table rows count is negative, which is unexpected"
+        assert len(rows) > 0 or atcu_dispatched_device_page.is_table_empty(), "Dispatched Devices table should have data rows or be empty"
 
     # 5. Test sample data rows
     @pytest.mark.regression

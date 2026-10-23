@@ -158,6 +158,9 @@ ADD_PRODUCTION_URL = _get(
     "ADD_PRODUCTION_URL",
     "http://lct-a4g-qa.accoladeelectronics.com/add-production-device",
 )
+ADD_DISPATCHED_DEVICE = _get(
+    "ADD_DISPATCHED_DEVICE", "http://lct-a4g-qa.accoladeelectronics.com/add-dispatched-device"
+)
 USER_MANAGEMENT_URL = _get(
     "USER_MANAGEMENT_URL",
     "http://lct-a4g-qa.accoladeelectronics.com/user-tab",

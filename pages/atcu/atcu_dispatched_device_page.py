@@ -14,7 +14,7 @@ class AtcuDispatchedDevicePage(BasePage):
     SEARCH_INPUT = "input[formcontrolname='searchInput']"
     SEARCH_BTN = "button.search-btn"
     TABLE = ".component-body table"
-    TABLE_HEADERS = ".component-body table thead th"
+    TABLE_HEADERS = ".component-body table tr th"
     TABLE_ROWS = ".component-body table tbody tr"
     PAGINATION_CONTAINER = "app-common-component-pagination, .pagination-container"
     ROWS_SELECT = "select#rowsSelect"
