@@ -29,9 +29,9 @@ class AtcuOtaPage(BasePage):
     # Add OTA Command Form Locators
     OTA_NAME_FIELD = "input[formcontrolname='name']"
     OTA_COMMAND_FIELD = "input[formcontrolname='otaCommand']"
-    OTA_TYPE_DROPDOWN = "mat-select[formcontrolname='otaCommandType']"
-    EXAMPLE_FIELD = "input[formcontrolname='otaCommandExample']"
-    INPUT_FIELD_REQUIRED_DROPDOWN = "mat-select[formcontrolname='isInputFieldRequired']"
+    OTA_TYPE_DROPDOWN = "mat-select[formcontrolname='otaType']"
+    EXAMPLE_FIELD = "[id='example']"
+    INPUT_FIELD_REQUIRED_DROPDOWN = "mat-select[formcontrolname='isInputRequired']"
     SUBMIT_BUTTON = "button:has-text('Submit')"
     SEARCH_BUTTON = "button:has-text('Search search')"
     MAT_OPTION = "mat-option"
@@ -192,8 +192,13 @@ class AtcuOtaPage(BasePage):
         logger.debug("Filling Add OTA Command form with name=%s, command=%s", name, command)
         self.page.locator(self.OTA_NAME_FIELD).fill(name)
         self.page.locator(self.OTA_COMMAND_FIELD).fill(command)
+        self.page.locator(self.OTA_TYPE_DROPDOWN).click()
+        self.page.locator(f"{self.MAT_OPTION}:has-text('{cmd_type}')").first.click()
         if example:
             self.page.locator(self.EXAMPLE_FIELD).fill(example)
+        self.page.locator(self.INPUT_FIELD_REQUIRED_DROPDOWN).click()
+        self.page.locator(f"{self.MAT_OPTION}:has-text('{is_required}')").first.click()
+
 
     def submit_add_ota_command_form(self) -> None:
         logger.debug("Submitting Add OTA Command form")

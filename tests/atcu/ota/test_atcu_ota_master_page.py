@@ -308,7 +308,8 @@ class TestAtcuOtaMasterPage:
         atcu_ota_master_page.go_to_ota_master_page()
         atcu_ota_master_page.validate_add_ota_button_and_click()
 
-        atcu_ota_master_page.fill_add_ota_command_form("Test Name", "Test Cmd", "GET", "Test Ex", "NO")
+        atcu_ota_master_page.fill_add_ota_command_form(
+            f"Test Name - {helper.generate_random_string()}", f"Test Cmd - {helper.generate_random_string()}", "GET", f"Test - {helper.generate_random_string()}", "NO")
 
         btn = atcu_ota_master_page.page.locator(atcu_ota_master_page.SUBMIT_BUTTON).first
         btn_visible = btn.is_visible()
@@ -319,6 +320,8 @@ class TestAtcuOtaMasterPage:
             message="Validate Submit button enabled state on filled form",
         )
 
+        assert btn_visible, "Submit button should be visible when form is filled"
+
     @pytest.mark.smoke
     @pytest.mark.ui
     @pytest.mark.regression
@@ -328,8 +331,9 @@ class TestAtcuOtaMasterPage:
         atcu_ota_master_page.go_to_ota_master_page()
         atcu_ota_master_page.validate_add_ota_button_and_click()
 
-        atcu_ota_master_page.fill_add_ota_command_form("Click OTA", "Click Cmd", "SET", "Click Ex", "NO")
-
+        atcu_ota_master_page.fill_add_ota_command_form(
+                    f"Test Name - {helper.generate_random_string()}", f"Test Cmd - {helper.generate_random_string()}", "GET", f"Test - {helper.generate_random_string()}", "NO")
+    
         btn = atcu_ota_master_page.page.locator(atcu_ota_master_page.SUBMIT_BUTTON).first
         assert btn.is_visible(), "Submit button should be visible"
 

@@ -17,7 +17,7 @@ class AtcuOtaPageAPI:
             from ..api_client import APIClient
             return APIClient.get_default().ota.get_ota_batch_list(page_no, size, search, *args, **kwargs)
 
-        endpoint = GET_ATCU_OTA_BATCH_LIST.format(page_no=page_no, size=size, search=quote(search, safe=""))
+        endpoint = GET_ATCU_OTA_BATCH_LIST.format(page_no=page_no, size=size)
         result = self._client.get(endpoint)
         batches = result.get("data", {}).get("batchDeviceData", [])
         batch_ids = [b["_id"] for b in batches if isinstance(b, dict) and b.get("_id")]
@@ -35,8 +35,8 @@ class AtcuOtaPageAPI:
                 break
         batch_ref_id = kwargs.get("batch_ref_id", batch_ref_id)
         endpoint = GET_ATCU_OTA_BATCH_KPI.format(
-            page_no=kwargs.get("page_no", 1),
-            size=kwargs.get("size", 10),
+            page_no=kwargs.get("pageNo", 1),
+            size=kwargs.get("size", 100),
             search=quote(kwargs.get("search", ""), safe=""),
             batch_ref_id=quote(str(batch_ref_id or ""), safe=""),
             kpi_selected=quote(kwargs.get("kpi_selected", "All"), safe=""),

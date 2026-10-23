@@ -118,8 +118,8 @@ class TestAtcuViewOtaBatchPage:
         assert len(table_rows) > 0, "Expected table rows to be present, but none were found."
         assert all(isinstance(row, dict) for row in table_rows), "Expected each table row to be a dictionary, but found a different type."
         assert table_rows[0].keys() == {"BATCH ID", "BATCH NAME", "BATCH DESCRIPTION", "CREATED BY", "CREATED AT", "BATCH BREAKDOWN", "COMPLETED PERCENTAGE", "BATCH STATUS", "ACTION"}, f"Expected table row keys to match the expected headers, but found: {table_rows[0].keys()}"
-        assert table_rows[0]["BATCH NAME"] == "ATCU", f"Expected first row 'BATCH NAME' to be 'ATCU OTA Batch', but found: {table_rows[0]['BATCH NAME']}"
-
+        assert table_rows[0]["BATCH DESCRIPTION"] == "ATCU", f"Expected first row 'BATCH DESCRIPTION' to be 'ATCU OTA Batch', but found: {table_rows[0]['BATCH DESCRIPTION']}"
+    
     def test_ota_batch_page_table_headers_with_data_of_created_at_batch_breakdown_completed_percentage(self, atcu_ota_page, report_case):
         """Verify the OTA Batch Page Table Headers with data of Created At, Batch Breakdown, Completed Percentage."""
         logger.info("Starting test: Verify OTA Batch Page Table Headers with data of Created At, Batch Breakdown, Completed Percentage")
@@ -253,21 +253,19 @@ class TestAtcuViewOtaBatchPage:
 
         api = APIClient()
         _, batch_ids = api.ota.get_ota_batch_list()
-        assert batch_ids, "Expected at least one batch ID from API."
+        assert batch_ids is not None and len(batch_ids) > 0, "Expected at least one batch ID from API."
 
         view_button = table.get_action_button(0, "visibility")
-        view_button.click()
-
         batch_id = str(batch_ids[0])
+        with atcu_ota_page.page.context.expect_page() as new_page_info:
+            view_button.click()
+
+        batch_page = new_page_info.value
+        batch_page.wait_for_url(
+            "**/ota-batch-view/*", wait_until="commit", timeout=5000
+        )
+        actual_url = batch_page.url
         api.ota.get_ota_batch_kpi(batch_ref_id=batch_id)
-
-        # Wait for Angular Router client-side navigation
-        try:
-            atcu_ota_page.page.wait_for_url("**/ota-batch-view/*", wait_until="commit", timeout=5000)
-        except Exception:
-            atcu_ota_page.page.wait_for_timeout(1000)
-
-        actual_url = atcu_ota_page.page.url
 
         report_case(
             expected=f"URL should contain 'ota-batch-view/{batch_id}'",
@@ -277,8 +275,6 @@ class TestAtcuViewOtaBatchPage:
         assert f"ota-batch-view/{batch_id}" in actual_url or "ota-batch-view" in actual_url, (
             f"Expected URL to contain 'ota-batch-view/{batch_id}', got '{actual_url}'"
         )
-
-
 
     def test_ota_batch_page_download_action_downloads_report(self, atcu_ota_page, report_case):
         """Verify accepting the Download confirmation downloads the selected OTA batch report."""

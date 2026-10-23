@@ -59,10 +59,10 @@ GET_DASHBOARD_COUNTS = "/api/crm/getDashCounts"
 
 # ATCU OTA batch endpoints
 GET_ATCU_OTA_BATCH_LIST = (
-    "/api/ota/fetchOtaBatchList?pageNo={page_no}&size={size}&search={search}"
+    "/api/ota/fetchOtaBatchList?pageNo={page_no}&size={size}"
 )
 GET_ATCU_OTA_BATCH_KPI = (
-    "/api/ota/fetchOtaBatchKpi?pageNo={page_no}&size={size}&search={search}"
+    "/api/ota/fetchOtaBatchKpi?pageNo={page_no}&size={size}"
     "&batchRefId={batch_ref_id}&kpiSelected={kpi_selected}"
 )
 

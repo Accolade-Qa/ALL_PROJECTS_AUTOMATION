@@ -1,10 +1,8 @@
 """Central API Client that orchestrates requests to page-specific API modules."""
 
 import requests
-import urllib3
 from utils.logger import get_logger
 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logger = get_logger(__name__)
 
 
@@ -31,7 +29,6 @@ class APIClient:
         self.user_id = None
 
         self.session = requests.Session()
-        self.session.verify = False
 
         # Page-specific API modules orchestrated here
         from .customer_api import CustomerAPI
