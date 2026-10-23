@@ -178,6 +178,10 @@ DISPATCHED_DEVICE_URL = _get(
     "DISPATCHED_DEVICE_URL",
     "http://lct-a4g-qa.accoladeelectronics.com/dispatch-device-page",
 )
+DEVICE_DASHBOARD_URL = _get(
+    "DEVICE_DASHBOARD_URL",
+    "http://lct-a4g-qa.accoladeelectronics.com/device-dashboard-page",
+)
 PROFILE_URL = _get(
     "PROFILE_URL",
     "http://lct-a4g-qa.accoladeelectronics.com/profile",

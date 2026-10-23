@@ -7,7 +7,6 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-
 @pytest.mark.atcu
 @pytest.mark.device
 @pytest.mark.regression
@@ -21,7 +20,8 @@ class TestGovtServerPage:
         report = getattr(request.node, "rep_call", None)
         if report is None:
             logger.debug(
-                "ATCU Government Server test finished without call report: %s", test_name
+                "ATCU Government Server test finished without call report: %s",
+                test_name,
             )
         elif report.passed:
             logger.info("ATCU Government Server test passed: %s", test_name)
@@ -107,11 +107,16 @@ class TestGovtServerPage:
         expected_headers = [
             "NAME OF STATE",
             "STATE ABBREVIATION",
-            "STATE ENABLE OTA",
+            "1ST SEO",
             "GOVT. IP1",
             "PORT1",
             "GOVT. IP2",
             "PORT2",
+            "2ND SEO",
+            "GOVT. IP3",
+            "PORT3",
+            "GOVT. IP4",
+            "PORT4",
             "CREATED BY",
             "ACTION",
         ]
@@ -121,6 +126,9 @@ class TestGovtServerPage:
             actual=f"headers={headers}",
             message="Validate Government Servers table headers",
         )
+
+        assert len(headers) > 0, "Government Servers table headers list is empty"
+        assert all(header in expected_headers for header in headers), "Unexpected table headers found"
         assert (
             headers == expected_headers
         ), f"Government Servers table headers mismatched: {headers}"
@@ -146,7 +154,6 @@ class TestGovtServerPage:
         assert "STATE ABBREVIATION" in first_row
         assert "GOVT. IP1" in first_row
 
-
     # 6. Test search by State Name (Positive)
     @pytest.mark.regression
     @pytest.mark.ui
@@ -165,7 +172,9 @@ class TestGovtServerPage:
             actual=f"is_present={is_present}",
             message="Validate positive search by State Name",
         )
-        assert is_present, f"Search result for State Name '{search_term}' not found in table"
+        assert (
+            is_present
+        ), f"Search result for State Name '{search_term}' not found in table"
 
     # 7. Test search by State Abbreviation (Positive)
     @pytest.mark.regression
@@ -176,7 +185,7 @@ class TestGovtServerPage:
         report_case,
     ):
         logger.info("Validating positive search by State Abbreviation")
-        search_term = "BR"
+        search_term = "DND"  # State abbreviation for DO NOT DELETE (example)
         atcu_govt_server_page.search_govt_server_list(search_term)
 
         is_present = atcu_govt_server_page.is_state_present_in_table(search_term)
@@ -185,7 +194,9 @@ class TestGovtServerPage:
             actual=f"is_present={is_present}",
             message="Validate positive search by State Abbreviation",
         )
-        assert is_present, f"Search result for State Abbreviation '{search_term}' not found in table"
+        assert (
+            is_present
+        ), f"Search result for State Abbreviation '{search_term}' not found in table"
 
     # 8. Test search by Govt IP (Positive)
     @pytest.mark.regression
@@ -205,7 +216,9 @@ class TestGovtServerPage:
             actual=f"is_present={is_present}",
             message="Validate positive search by Govt IP",
         )
-        assert is_present, f"Search result for Govt IP '{search_term}' not found in table"
+        assert (
+            is_present
+        ), f"Search result for Govt IP '{search_term}' not found in table"
 
     # 9. Test search by Port (Positive)
     @pytest.mark.regression
@@ -259,13 +272,17 @@ class TestGovtServerPage:
         invalid_term = "NON_EXISTENT_STATE_99999"
         atcu_govt_server_page.search_govt_server_list(invalid_term)
 
-        is_present = atcu_govt_server_page.is_state_present_in_table(invalid_term, timeout=3000)
+        is_present = atcu_govt_server_page.is_state_present_in_table(
+            invalid_term, timeout=3000
+        )
         report_case(
             expected=f"Searching non-existent term '{invalid_term}' should yield no matching rows",
             actual=f"is_present={is_present}",
             message="Validate negative search for non-existent term",
         )
-        assert not is_present, f"Unexpectedly found matching row for non-existent term '{invalid_term}'"
+        assert (
+            not is_present
+        ), f"Unexpectedly found matching row for non-existent term '{invalid_term}'"
 
     # 12. Test download report button visibility
     @pytest.mark.regression
@@ -382,8 +399,12 @@ class TestGovtServerPage:
             actual=f"initial_rows='{initial_rows}', updated_rows='{updated_rows}'",
             message="Validate rows per page dropdown selection",
         )
-        assert initial_rows == "10", f"Expected default rows per page '10', got '{initial_rows}'"
-        assert updated_rows == "25", f"Expected updated rows per page '25', got '{updated_rows}'"
+        assert (
+            initial_rows == "10"
+        ), f"Expected default rows per page '10', got '{initial_rows}'"
+        assert (
+            updated_rows == "25"
+        ), f"Expected updated rows per page '25', got '{updated_rows}'"
 
     # 18. Test pagination navigation verification
     @pytest.mark.regression
@@ -401,9 +422,9 @@ class TestGovtServerPage:
             actual=f"pag_result={pag_result}",
             message="Validate pagination navigation",
         )
-        assert (
-            pag_result["success"]
-        ), f"Pagination validation failed: {pag_result.get('error')}"
+        assert pag_result[
+            "success"
+        ], f"Pagination validation failed: {pag_result.get('error')}"
 
     # 19. Test navigation to Add Government server sub-page
     @pytest.mark.regression
@@ -445,7 +466,9 @@ class TestGovtServerPage:
             message="Validate Add Government Servers page titles",
         )
         assert title == "Add Government Servers", f"Page title mismatched: '{title}'"
-        assert comp_title == "Government Servers Details", f"Component title mismatched: '{comp_title}'"
+        assert (
+            comp_title == "Government Servers Details"
+        ), f"Component title mismatched: '{comp_title}'"
 
     # 20a. Test all input fields on Add Government Server form are enabled and editable
     @pytest.mark.regression
@@ -455,14 +478,18 @@ class TestGovtServerPage:
         atcu_govt_server_page,
         report_case,
     ):
-        logger.info("Validating all input fields on Add Government Server page are enabled and editable")
+        logger.info(
+            "Validating all input fields on Add Government Server page are enabled and editable"
+        )
         atcu_govt_server_page.click_add_govt_server_button()
         fields = atcu_govt_server_page.get_input_fields_locators()
 
         for field_name, locator in fields.items():
             is_vis = locator.is_visible()
             is_ena = locator.is_enabled()
-            logger.debug("Field '%s' -> Visible: %s, Enabled: %s", field_name, is_vis, is_ena)
+            logger.debug(
+                "Field '%s' -> Visible: %s, Enabled: %s", field_name, is_vis, is_ena
+            )
             report_case(
                 expected=f"Field '{field_name}' should be visible and enabled",
                 actual=f"Visible: {is_vis}, Enabled: {is_ena}",
@@ -548,7 +575,6 @@ class TestGovtServerPage:
         )
         assert tooltip != "", "Search bar tooltip message should not be empty"
 
-
     # 21. Test Add Form initial state & Submit button state (Negative Validation)
     @pytest.mark.regression
     @pytest.mark.ui
@@ -566,7 +592,9 @@ class TestGovtServerPage:
             actual=f"is_submit_enabled={is_submit_enabled}",
             message="Validate initial state of Add Government Server form",
         )
-        assert not is_submit_enabled, "Submit button should be disabled initially when required fields are empty"
+        assert (
+            not is_submit_enabled
+        ), "Submit button should be disabled initially when required fields are empty"
 
     # 21a. Corner Case Test: Partial form fill keeps Submit button disabled
     @pytest.mark.regression
@@ -576,9 +604,13 @@ class TestGovtServerPage:
         atcu_govt_server_page,
         report_case,
     ):
-        logger.info("Validating Submit button remains disabled when form is only partially filled")
+        logger.info(
+            "Validating Submit button remains disabled when form is only partially filled"
+        )
         atcu_govt_server_page.click_add_govt_server_button()
-        atcu_govt_server_page.fill_add_govt_server_form(state="OnlyStateName", state_abbr=None)
+        atcu_govt_server_page.fill_add_govt_server_form(
+            state="OnlyStateName", state_abbr=None
+        )
 
         is_submit_enabled = atcu_govt_server_page.is_submit_button_enabled()
         report_case(
@@ -586,7 +618,9 @@ class TestGovtServerPage:
             actual=f"is_submit_enabled={is_submit_enabled}",
             message="Validate partial form fill disabled state",
         )
-        assert not is_submit_enabled, "Submit button should remain disabled when required fields are missing"
+        assert (
+            not is_submit_enabled
+        ), "Submit button should remain disabled when required fields are missing"
 
     # 21b. Corner Case Test: Fill spaces-only inputs (Negative Validation)
     @pytest.mark.regression
@@ -634,7 +668,6 @@ class TestGovtServerPage:
             message="Validate duplicate state creation handling",
         )
 
-
     # 22. Corner Case Test: Form fields handling leading and trailing whitespace
     @pytest.mark.regression
     @pytest.mark.ui
@@ -643,7 +676,9 @@ class TestGovtServerPage:
         atcu_govt_server_page,
         report_case,
     ):
-        logger.info("Starting corner case validation for leading/trailing spaces in Add Government Server form")
+        logger.info(
+            "Starting corner case validation for leading/trailing spaces in Add Government Server form"
+        )
         atcu_govt_server_page.click_add_govt_server_button()
         assert atcu_govt_server_page.is_add_page_loaded()
 
@@ -664,7 +699,9 @@ class TestGovtServerPage:
         atcu_govt_server_page.click_submit_button()
 
         atcu_govt_server_page.search_govt_server_list(expected_state_name)
-        is_present = atcu_govt_server_page.is_state_present_in_table(expected_state_name, timeout=10000)
+        is_present = atcu_govt_server_page.is_state_present_in_table(
+            expected_state_name, timeout=10000
+        )
 
         if is_present:
             atcu_govt_server_page.click_delete_button_for_row(expected_state_name)
@@ -674,7 +711,9 @@ class TestGovtServerPage:
             actual=f"is_present={is_present}",
             message="Validate leading/trailing whitespace handling in form fields",
         )
-        assert is_present, f"Government server created with whitespace '{expected_state_name}' was not found in table"
+        assert (
+            is_present
+        ), f"Government server created with whitespace '{expected_state_name}' was not found in table"
 
     # 23. Test View action button for existing server row
     @pytest.mark.regression
@@ -684,7 +723,9 @@ class TestGovtServerPage:
         atcu_govt_server_page,
         report_case,
     ):
-        logger.info("Validating View action button for an existing government server row")
+        logger.info(
+            "Validating View action button for an existing government server row"
+        )
         sample_state = "Bihar"
         assert atcu_govt_server_page.is_state_present_in_table(sample_state)
 
@@ -698,7 +739,9 @@ class TestGovtServerPage:
             message="Validate View action button navigation",
         )
         assert is_view_vis, f"View button not visible for row '{sample_state}'"
-        assert is_add_loaded, "Add/Details page failed to load after clicking View button"
+        assert (
+            is_add_loaded
+        ), "Add/Details page failed to load after clicking View button"
 
     # 24. Test Delete action button visibility for table row
     @pytest.mark.regression
@@ -712,7 +755,9 @@ class TestGovtServerPage:
         sample_state = "Bihar"
         assert atcu_govt_server_page.is_state_present_in_table(sample_state)
 
-        is_delete_vis = atcu_govt_server_page.is_delete_button_visible_for_row(sample_state)
+        is_delete_vis = atcu_govt_server_page.is_delete_button_visible_for_row(
+            sample_state
+        )
         report_case(
             expected=f"Delete action button should be visible for row '{sample_state}'",
             actual=f"is_delete_vis={is_delete_vis}",
@@ -763,11 +808,17 @@ class TestGovtServerPage:
         logger.info("Step 4: Returning to Government Servers list page")
         atcu_govt_server_page.is_page_loaded()
 
-        logger.info("Step 5: Searching for newly added state '%s' in table", unique_state)
+        logger.info(
+            "Step 5: Searching for newly added state '%s' in table", unique_state
+        )
         atcu_govt_server_page.search_govt_server_list(unique_state)
 
-        logger.info("Step 6: Validating entry present in list table and matching details")
-        is_created_present = atcu_govt_server_page.is_state_present_in_table(unique_state, timeout=10000)
+        logger.info(
+            "Step 6: Validating entry present in list table and matching details"
+        )
+        is_created_present = atcu_govt_server_page.is_state_present_in_table(
+            unique_state, timeout=10000
+        )
         assert is_created_present, f"Created state '{unique_state}' not found in table"
 
         row_details = atcu_govt_server_page.get_row_details_by_state(unique_state)
@@ -779,8 +830,12 @@ class TestGovtServerPage:
 
         logger.info("Step 8: Confirming state is deleted from table")
         atcu_govt_server_page.search_govt_server_list(unique_state)
-        is_still_present = atcu_govt_server_page.is_state_present_in_table(unique_state, timeout=3000)
-        assert not is_still_present, f"Deleted state '{unique_state}' is still present in table"
+        is_still_present = atcu_govt_server_page.is_state_present_in_table(
+            unique_state, timeout=3000
+        )
+        assert (
+            not is_still_present
+        ), f"Deleted state '{unique_state}' is still present in table"
 
         report_case(
             expected="Government server should be created, verified via search, deleted, and confirmed absent",
