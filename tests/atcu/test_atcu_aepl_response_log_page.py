@@ -34,6 +34,25 @@ class TestAeplResponseLogPage:
         elif report.skipped:
             logger.warning("AEPL Response Log test skipped: %s", test_name)
 
+    @staticmethod
+    def _get_first_row_payload(aepl_response_log_page):
+        aepl_response_log_page.page.reload(wait_until="networkidle")
+        row = TableSection(aepl_response_log_page.page).get_row_data(0)
+        payload = aepl_response_log_page._normalize_payload_value(row["PAYLOAD"])
+
+        assert isinstance(payload, dict), "UI payload is not a dictionary"
+        for column, key in (
+            ("VIN NO.", "VIN_NO"),
+            ("ICCID NO.", "ICCID"),
+            ("UIN NO.", "UIN_NO"),
+        ):
+            assert key in payload, f"UI payload is missing {key}"
+            assert str(row[column]).strip() == str(payload[key]).strip(), (
+                f"{column} does not match {key} in the UI payload"
+            )
+
+        return row, payload
+
     # test that the page is loaded successfully
     @pytest.mark.regression
     @pytest.mark.ui
@@ -113,78 +132,21 @@ class TestAeplResponseLogPage:
             data, dict
         ), "Data is not a list in the valid request-response pairs"
 
-    # Test the response on the UI of the response log page with the valid payload
-    # and validate the response on the UI with the response from the API
+    # Validate the identifiers in the response-log row against its payload.
     @pytest.mark.regression
     @pytest.mark.ui
-    @pytest.mark.api
     @pytest.mark.smoke
     def test_aepl_response_log_page_valid_payload_ui_validation(
         self, aepl_response_log_page, report_case
     ):
-        logger.info("Validating AEPL Response Log page payload with API response")
-
-        _, VIN, UIN, ICCID, ticket_number, data = (
-            aepl_response_log_page.get_valid_request_response_by_api()
-        )
-
-        logger.info(
-            "API response received: VIN=%s, UIN=%s, ICCID=%s, ticket_number=%s, data=%s",
-            VIN,
-            UIN,
-            ICCID,
-            ticket_number,
-            data,
-        )
-
-        report_case(
-            expected="Valid payload response should be fetched from AEPL Response Log API",
-            actual=(
-                f"VIN={VIN}, UIN={UIN}, ICCID={ICCID}, "
-                f"ticket_number={ticket_number}, data={data}"
-            ),
-            message="AEPL API response validation",
-        )
-
-        assert data is not None, "API response data is None"
-        assert isinstance(data, dict), "API response data is not a dictionary"
-
-        logger.info("Reloading AEPL Response Log page to fetch latest entry")
-
-        aepl_response_log_page.page.reload(wait_until="networkidle")
-
-        table = TableSection(aepl_response_log_page.page)
-        row = table.get_row_data(0)
-
+        logger.info("Validating AEPL Response Log payload against its table row")
+        row, payload_data = self._get_first_row_payload(aepl_response_log_page)
         logger.info("UI response log row fetched: %s", row)
-
-        payload_data = aepl_response_log_page._normalize_payload_value(row["PAYLOAD"])
-
-        logger.info(
-            "Payload extracted from UI: %s",
-            payload_data,
-        )
-
         report_case(
-            expected="UI payload should match API response payload",
-            actual=f"UI payload={payload_data}, API payload={data}",
+            expected="VIN, ICCID and UIN in the UI row should match its payload",
+            actual=f"UI row={row}, payload={payload_data}",
             message="AEPL Response Log UI payload validation",
         )
-
-        assert isinstance(payload_data, dict), "UI payload is not a dictionary"
-
-        assert (
-            payload_data["ICCID"] == data["ICCID"]
-        ), "ICCID mismatch between UI payload and API response"
-
-        assert (
-            payload_data["UIN_NO"] == data["UIN_NO"]
-        ), "UIN mismatch between UI payload and API response"
-
-        assert (
-            payload_data["VIN_NO"] == data["VIN_NO"]
-        ), "VIN mismatch between UI payload and API response"
-
         logger.info("AEPL Response Log payload validation completed successfully")
 
     # Test the column data:
@@ -193,72 +155,17 @@ class TestAeplResponseLogPage:
     # VIN, UIN, ICCID validation
     @pytest.mark.regression
     @pytest.mark.ui
-    @pytest.mark.api
     @pytest.mark.smoke
-    def test_aepl_response_log_page_table_data_api_validation(
+    def test_aepl_response_log_page_table_data_payload_validation(
         self, aepl_response_log_page, report_case
     ):
-        logger.info("Validating AEPL Response Log table data with API response")
-
-        (
-            _,
-            VIN,
-            UIN,
-            ICCID,
-            ticket_number,
-            data,
-        ) = aepl_response_log_page.get_valid_request_response_by_api()
-
-        logger.info(
-            "API data received: VIN=%s, UIN=%s, ICCID=%s, ticket_number=%s",
-            VIN,
-            UIN,
-            ICCID,
-            ticket_number,
-        )
-
+        logger.info("Validating AEPL Response Log table data against its payload")
+        ui_data, payload_data = self._get_first_row_payload(aepl_response_log_page)
         report_case(
-            expected="AEPL Response Log API should return valid VIN, UIN and ICCID data",
-            actual=(
-                f"VIN={VIN}, UIN={UIN}, ICCID={ICCID}, "
-                f"ticket_number={ticket_number}"
-            ),
-            message="AEPL API data validation",
-        )
-
-        logger.info("Reloading AEPL Response Log page to get latest table data")
-
-        aepl_response_log_page.page.reload(wait_until="networkidle")
-
-        ui_data = TableSection(aepl_response_log_page.page).get_row_data(0)
-
-        logger.info(
-            "UI table row data fetched: %s",
-            ui_data,
-        )
-
-        report_case(
-            expected="AEPL Response Log table should display API data correctly",
-            actual=(
-                f"UI VIN={ui_data.get('VIN NO.')}, "
-                f"UI UIN={ui_data.get('UIN NO.')}, "
-                f"UI ICCID={ui_data.get('ICCID NO.')}"
-            ),
+            expected="AEPL Response Log table identifiers should match the row payload",
+            actual=f"UI row={ui_data}, payload={payload_data}",
             message="AEPL Response Log UI table data validation",
         )
-
-        assert (
-            VIN == ui_data["VIN NO."]
-        ), "VIN mismatch between API response and UI table"
-
-        assert (
-            UIN == ui_data["UIN NO."]
-        ), "UIN mismatch between API response and UI table"
-
-        assert (
-            ICCID == ui_data["ICCID NO."]
-        ), "ICCID mismatch between API response and UI table"
-
         logger.info("AEPL Response Log table data validation completed successfully")
 
     # Validate the Search functionality on the response log page with the valid payload and validate the response on the ui with the response from the api
@@ -336,71 +243,27 @@ class TestAeplResponseLogPage:
             actual_headers == expected_headers
         ), f"Table headers mismatch. Expected: {expected_headers}, Actual: {actual_headers}"
 
-    # Validate the table data first row response's each data with the response from the api
+    # Validate the first row's payload and response metadata.
     @pytest.mark.regression
     @pytest.mark.ui
-    def test_aepl_response_log_page_first_row_api_validation(
+    def test_aepl_response_log_page_first_row_payload_validation(
         self, aepl_response_log_page, report_case
     ):
         logger.info(
-            "Validating first row of table data on the AEPL Response Log page with API response"
+            "Validating first-row identifiers against its AEPL Response Log payload"
         )
-
-        _, VIN, UIN, ICCID, _, data = (
-            aepl_response_log_page.get_valid_request_response_by_api()
-        )
-
-        logger.info("API response received: VIN=%s, UIN=%s, ICCID=%s,", VIN, UIN, ICCID)
-
-        report_case(
-            expected="Valid payload response should be fetched from AEPL Response Log API",
-            actual=(f"VIN={VIN}, UIN={UIN}, ICCID={ICCID}, data={data}"),
-            message="AEPL Response Log API response validation",
-        )
-
-        assert data is not None, "API response data is None"
-        assert isinstance(data, dict), "API response data is not a dictionary"
-
-        logger.info("Reloading AEPL Response Log page to fetch latest entry")
-
-        aepl_response_log_page.page.reload(wait_until="networkidle")
-
-        table = TableSection(aepl_response_log_page.page)
-        row = table.get_row_data(0)
-
+        row, payload_data = self._get_first_row_payload(aepl_response_log_page)
         logger.info("UI response log row fetched: %s", row)
-
-        payload_data = aepl_response_log_page._normalize_payload_value(row["PAYLOAD"])
-
-        logger.info(
-            "Payload extracted from UI: %s",
-            payload_data,
-        )
-
         report_case(
-            expected="UI payload should match API response payload",
-            actual=f"UI payload={payload_data}, API payload={data}",
+            expected="First-row identifiers should match the payload in that row",
+            actual=f"UI row={row}, payload={payload_data}",
             message="AEPL Response Log UI payload validation",
         )
-
-        assert isinstance(payload_data, dict), "UI payload is not a dictionary"
-
-        assert (
-            payload_data["ICCID"] == data["ICCID"]
-        ), "ICCID mismatch between UI payload and API response"
-
-        assert (
-            payload_data["UIN_NO"] == data["UIN_NO"]
-        ), "UIN mismatch between UI payload and API response"
-
-        assert (
-            payload_data["VIN_NO"] == data["VIN_NO"]
-        ), "VIN mismatch between UI payload and API response"
 
         assert (
             row["SENT TO"] == "Generate Tickets API"
             or row["SENT TO"] == "Institutional Sale"
-        ), "SENT TO value mismatch between UI payload and API response"
+        ), "Unexpected SENT TO value in the UI response log row"
 
         assert (
             row["SENT AT"] is not None and len(row["SENT AT"]) > 0

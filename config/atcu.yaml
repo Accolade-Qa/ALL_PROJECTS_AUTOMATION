@@ -42,7 +42,7 @@ profile_url: "{base_url}/profile"
 api_base_url: "{base_url}:6101"
 api_login_endpoint: "/api/user/login"
 
-ticket_base_url: "{base_url}:6109"
+ticket_base_url: "https://aepl-tcu4g-qa.accoladeelectronics.com:6109"
 browser: chromium
 headless: false
 screenshot_on_failure: true
