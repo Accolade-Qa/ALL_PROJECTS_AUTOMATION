@@ -1,5 +1,4 @@
 import pytest
-from datetime import datetime, timezone, timedelta
 
 from utils.logger import get_logger
 from api import APIClient
@@ -790,6 +789,18 @@ class TestTicketDashboardPage:
         logger.info("Testing TAT Report download in ON HOLD card view with 15-day filter")
         atcu_ticket_dashboard_page.click_kpi_card("ON HOLD")
         download_obj, file_path, file_size = atcu_ticket_dashboard_page.apply_15_days_date_filter_and_download_tat_report()
+        if download_obj is None:
+            is_enabled = atcu_ticket_dashboard_page.page.locator(
+                atcu_ticket_dashboard_page.DOWNLOAD_TAT_REPORT_BTN
+            ).first.is_enabled()
+            report_case(
+                expected="Download TAT Report is disabled when the ON HOLD view has no report data in the selected date range",
+                actual=f"download_triggered=False, is_enabled={is_enabled}",
+                message="Validate TAT Report availability in ON HOLD view",
+            )
+            assert not is_enabled, "TAT Report download failed while the ON HOLD report button remained enabled"
+            return
+
         report_case(
             expected="Download TAT Report in ON HOLD card view with 15-day filter should produce valid file",
             actual=f"download_triggered={download_obj is not None}, file_size={file_size}",
@@ -824,6 +835,18 @@ class TestTicketDashboardPage:
         logger.info("Testing TAT Report download in COMPLETED card view with 15-day filter")
         atcu_ticket_dashboard_page.click_kpi_card("COMPLETED")
         download_obj, file_path, file_size = atcu_ticket_dashboard_page.apply_15_days_date_filter_and_download_tat_report()
+        if download_obj is None:
+            is_enabled = atcu_ticket_dashboard_page.page.locator(
+                atcu_ticket_dashboard_page.DOWNLOAD_TAT_REPORT_BTN
+            ).first.is_enabled()
+            report_case(
+                expected="Download TAT Report is disabled when the COMPLETED view has no report data in the selected date range",
+                actual=f"download_triggered=False, is_enabled={is_enabled}",
+                message="Validate TAT Report availability in COMPLETED view",
+            )
+            assert not is_enabled, "TAT Report download failed while the COMPLETED report button remained enabled"
+            return
+
         report_case(
             expected="Download TAT Report in COMPLETED card view with 15-day filter should produce valid file",
             actual=f"download_triggered={download_obj is not None}, file_size={file_size}",

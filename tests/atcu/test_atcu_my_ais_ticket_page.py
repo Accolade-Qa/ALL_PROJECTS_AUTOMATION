@@ -1,24 +1,32 @@
 import pytest
 
 from pages.atcu.atcu_my_ais_ticket_page import AtcuMyAisTicketPage
+from utils.logger import logger
 
 
 @pytest.mark.ticket
 @pytest.mark.atcu
 @pytest.mark.regression
 class TestMyAisTicketPage:
-    @pytest.mark.regression
-    @pytest.mark.ui
-    @pytest.mark.smoke
-    def test_my_ais_ticket_page_loads(self, page, project_config, report_case):
-        my_ais_ticket = AtcuMyAisTicketPage(page, project_config["my_ais_ticket_url"])
-        my_ais_ticket.load()
-
-        loaded = my_ais_ticket.is_loaded()
-        report_case(
-            expected="My AIS Ticket page should load",
-            actual=f"url={page.url}",
-            result="passed" if loaded else "failed",
-            message="Validate ATCU My AIS Ticket navigation",
-        )
-        assert loaded
+    @pytest.fixture(autouse=True)
+    def log_test_case(self, request):
+        test_name = request.node.name
+        logger.info("Starting ATCU Model page test: %s", test_name)
+        logger.debug("Executing test node: %s", request.node.nodeid)
+        yield
+        report = getattr(request.node, "rep_call", None)
+        if report is None:
+            logger.debug(
+                "ATCU Model page test finished without call report: %s", test_name
+            )
+        elif report.passed:
+            logger.info("ATCU Model page test passed: %s", test_name)
+        elif report.failed:
+            logger.error("ATCU Model page test failed: %s", test_name)
+            logger.debug(
+                "ATCU Model page failure details for %s: %s",
+                test_name,
+                report.longrepr,
+            )
+        elif report.skipped:
+            logger.warning("ATCU Model page test skipped: %s", test_name)

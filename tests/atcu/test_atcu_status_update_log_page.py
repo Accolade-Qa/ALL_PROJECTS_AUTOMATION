@@ -154,9 +154,9 @@ class TestStatusUpdateLogPage:
         logger.info("Validating positive search by VIN NO.")
         sample_row = atcu_status_update_log_page.get_first_row_data()
         search_term = sample_row.get("VIN NO.", "ACCDEV07241580742")
-        atcu_status_update_log_page.search_status_log(search_term)
+        atcu_status_update_log_page.search_status_log(search_term.strip())
 
-        is_present = atcu_status_update_log_page.is_vin_present_in_table(search_term)
+        is_present = atcu_status_update_log_page.is_vin_present_in_table(search_term.strip())
         report_case(
             expected=f"Search for VIN NO. '{search_term}' should display matching row",
             actual=f"is_present={is_present}",
@@ -174,7 +174,7 @@ class TestStatusUpdateLogPage:
     ):
         logger.info("Validating positive search by Sent To destination")
         search_term = "TML CRM"
-        atcu_status_update_log_page.search_status_log(search_term)
+        atcu_status_update_log_page.search_status_log(search_term.strip())
 
         rows = atcu_status_update_log_page.get_table_rows()
         report_case(

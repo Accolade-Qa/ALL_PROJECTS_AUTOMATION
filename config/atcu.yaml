@@ -31,7 +31,7 @@ dispatched_device_url: "https://aepl-tcu4g-qa.accoladeelectronics.com/dispatch-d
 add_dispatched_device: "https://aepl-tcu4g-qa.accoladeelectronics.com/dispatch-device-add"
 tml_request_log_url: "https://aepl-tcu4g-qa.accoladeelectronics.com/ais140-api-req-logs"
 aepl_response_log_url: "https://aepl-tcu4g-qa.accoladeelectronics.com/ais140-api-res-logs"
-status_update_log_url: "https://aepl-tcu4g-qa.accoladeelectronics.com/status-update-log"
+status_update_log_url: "https://aepl-tcu4g-qa.accoladeelectronics.com/ais140-tml-api-logs"
 device_state_config_url: "https://aepl-tcu4g-qa.accoladeelectronics.com/device-state-config"
 device_vin_config_url: "https://aepl-tcu4g-qa.accoladeelectronics.com/device-vin-config"
 device_activity_log_url: "https://aepl-tcu4g-qa.accoladeelectronics.com/device-system-activity-log"

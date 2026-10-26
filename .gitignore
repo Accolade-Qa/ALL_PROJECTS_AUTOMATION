@@ -44,6 +44,7 @@ Thumbs.db
 
 Artifacts/
 Reports/
+downloads/
 
 # Claude code files
 CLAUDE.local.md

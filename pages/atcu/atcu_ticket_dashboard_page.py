@@ -42,7 +42,7 @@ class AtcuTicketDashboardPage(BasePage):
     SEARCH_INPUT = "input[formcontrolname='searchInput']"
     SEARCH_BTN = "button.search-btn"
     FILTER_BTN = "button:has-text('Filter')"
-    DOWNLOAD_TAT_REPORT_BTN = "button:has-text('Download TAT Report'), a:has-text('Download TAT Report'), .action-button:has-text('Download TAT Report'), button:has-text('Download')"
+    DOWNLOAD_TAT_REPORT_BTN = "button:has-text('Download TAT Report')"
 
     PAGINATION_CONTAINER = "app-common-component-pagination, .pagination-container"
     ROWS_SELECT = "#rowsSelect"
@@ -318,6 +318,7 @@ class AtcuTicketDashboardPage(BasePage):
             self.page.wait_for_timeout(300)
         except Exception as e:
             logger.warning("Failed to close filter modal: %s", e)
+
     def click_modal_submit(self):
         logger.info("Clicking Submit in filter modal")
         try:
@@ -347,6 +348,7 @@ class AtcuTicketDashboardPage(BasePage):
             btn.click(force=True)
         self.page.wait_for_load_state("networkidle", timeout=10000)
         self.page.wait_for_timeout(500)
+
     def fill_filter_dates(self, from_date="", to_date="", completed_from_date="", completed_to_date=""):
         logger.info("Filling filter dates in modal: from='%s', to='%s', completed_from='%s', completed_to='%s'", from_date, to_date, completed_from_date, completed_to_date)
         try:
@@ -409,6 +411,15 @@ class AtcuTicketDashboardPage(BasePage):
 
         btn = self.page.locator(self.DOWNLOAD_TAT_REPORT_BTN).first
         btn.wait_for(state="visible", timeout=5000)
+        if not btn.is_enabled():
+            logger.info("TAT report download is disabled for the current dashboard view")
+            return None
+
+        def accept_confirmation(dialog):
+            logger.info("Accepting TAT report confirmation: %s", dialog.message)
+            dialog.accept()
+
+        self.page.once("dialog", accept_confirmation)
         try:
             with self.page.expect_download(timeout=60000) as download_info:
                 btn.click()
@@ -417,15 +428,7 @@ class AtcuTicketDashboardPage(BasePage):
             return download
         except Exception as e:
             logger.warning("Download TAT report trigger exception: %s", e)
-            try:
-                with self.page.expect_download(timeout=30000) as download_info:
-                    btn.click(force=True)
-                download = download_info.value
-                logger.info("Force click report download triggered successfully: %s", download.suggested_filename)
-                return download
-            except Exception as e2:
-                logger.error("Download TAT report retry failed: %s", e2)
-                return None
+            return None
 
 
 

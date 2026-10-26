@@ -6,7 +6,7 @@ logger = get_logger(__name__)
 
 
 class AtcuStatusUpdateLogPage(BasePage):
-    PAGE_CONTAINER = "app-ais140-tml-api-logs"
+    PAGE_CONTAINER = "div.main-container"
     PAGE_TITLE = "span.page-title"
     COMPONENT_TITLE = ".component-title"
     SEARCH_INPUT = "input[formcontrolname='searchInput']"
@@ -26,16 +26,12 @@ class AtcuStatusUpdateLogPage(BasePage):
 
     def is_page_loaded(self):
         logger.info("Checking if AtcuStatusUpdateLogPage is loaded")
-        try:
-            self.page.locator(self.PAGE_CONTAINER).wait_for(
-                state="visible", timeout=10000
-            )
-            is_vis = self.page.locator(self.PAGE_CONTAINER).is_visible()
-            logger.info("AtcuStatusUpdateLogPage load status: %s", is_vis)
-            return is_vis
-        except Exception as e:
-            logger.error("AtcuStatusUpdateLogPage load check failed: %s", e)
-            return False
+        self.page.locator(self.PAGE_CONTAINER).wait_for(
+            state="visible", timeout=5000
+        )
+        is_vis = self.page.locator(self.PAGE_CONTAINER).is_visible()
+        logger.info("AtcuStatusUpdateLogPage load status: %s", is_vis)
+        return is_vis
 
     def get_title(self):
         logger.info("Retrieving AtcuStatusUpdateLogPage title")
@@ -72,16 +68,8 @@ class AtcuStatusUpdateLogPage(BasePage):
 
     def search_status_log(self, search_term):
         logger.info("Searching Status Update Log for term: %s", search_term)
-        try:
-            input_loc = self.page.locator(self.SEARCH_INPUT).first
-            input_loc.wait_for(state="visible", timeout=10000)
-            input_loc.fill(str(search_term))
-            input_loc.press("Enter")
-            self.page.wait_for_load_state("networkidle", timeout=10000)
-        except Exception as e:
-            logger.warning("Direct search input fill fallback to SearchHelper: %s", e)
-            search_helper = SearchHelper(self.page)
-            search_helper.run_search(str(search_term))
+        search_helper = SearchHelper(self.page)
+        search_helper.run_search(str(search_term))
 
     def clear_search_input(self):
         logger.info("Clearing search input field")
@@ -120,10 +108,25 @@ class AtcuStatusUpdateLogPage(BasePage):
         rows = self.get_table_rows()
         return rows[0] if rows else {}
 
+    @staticmethod
+    def _xpath_literal(value):
+        if "'" not in value:
+            return f"'{value}'"
+        if '"' not in value:
+            return f'"{value}"'
+        parts = value.split("'")
+        return "concat(" + ', "\'", '.join(f"'{part}'" for part in parts) + ")"
+
+    def _row_locator_for_vin(self, vin_no):
+        xpath_vin = self._xpath_literal(str(vin_no).strip())
+        return self.page.locator(
+            f"//tr[td[1][normalize-space(.)={xpath_vin}]]"
+        ).first
+
     def is_vin_present_in_table(self, vin_no, timeout=10000):
         logger.info("Checking if VIN '%s' is present in table", vin_no)
         try:
-            row_locator = self.page.locator(f"//tr[td[contains(text(), '{vin_no}')]]")
+            row_locator = self._row_locator_for_vin(vin_no)
             row_locator.wait_for(state="visible", timeout=timeout)
             is_vis = row_locator.is_visible()
             logger.info("VIN '%s' present in table: %s", vin_no, is_vis)
@@ -136,7 +139,7 @@ class AtcuStatusUpdateLogPage(BasePage):
         logger.info("Getting row details for VIN: %s", vin_no)
         try:
             headers = self.get_table_headers()
-            row_locator = self.page.locator(f"//tr[td[contains(text(), '{vin_no}')]]").first
+            row_locator = self._row_locator_for_vin(vin_no)
             cells = [td.text_content().strip() for td in row_locator.locator("td").all()]
             row_dict = dict(zip(headers, cells)) if headers else cells
             logger.info("Row details for VIN '%s': %s", vin_no, row_dict)
