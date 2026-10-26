@@ -814,7 +814,8 @@ class TestGovtServerPage:
         atcu_govt_server_page.click_submit_button()
 
         logger.info("Step 4: Returning to Government Servers list page")
-        atcu_govt_server_page.is_page_loaded()
+        is_loaded = atcu_govt_server_page.is_page_loaded()
+        assert is_loaded, "Government Servers list page failed to load after submission"
 
         logger.info(
             "Step 5: Searching for newly added state '%s' in table", unique_state

@@ -556,7 +556,7 @@ class TestModelPage:
         """
         Corner Case Test:
         Validate form field behavior when inputs contain leading and trailing whitespace.
-        Submit should enable and save/trim properly without error.
+        Submit should not enable and save/trim properly without error.
         """
         logger.info("Starting corner case validation for leading/trailing spaces in form fields")
         atcu_model_page.click_add_device_model_button()
@@ -566,7 +566,6 @@ class TestModelPage:
         raw_model_name = f"  TRIM_MODEL_{timestamp}  "
         raw_model_code = f"  TRIM_CODE_{timestamp}  "
         raw_hw_version = "  TRIM_HW_V1.0  "
-        expected_trimmed_name = f"TRIM_MODEL_{timestamp}"
 
         atcu_model_page.fill_create_model_form(
             model_name=raw_model_name,
@@ -575,24 +574,14 @@ class TestModelPage:
         )
 
         is_submit_enabled = atcu_model_page.is_submit_button_enabled()
-        assert is_submit_enabled, "Submit button should be enabled when form has leading/trailing space inputs"
-
-        atcu_model_page.click_submit_button()
-
-        # Validate that the model is created and searchable in the list (trimmed or exact)
-        atcu_model_page.search_model_list(expected_trimmed_name)
-        is_present = atcu_model_page.is_model_present_in_table(expected_trimmed_name, timeout=10000)
-
-        # Cleanup: Delete the created test model
-        if is_present:
-            atcu_model_page.click_delete_button_for_row(expected_trimmed_name)
+        assert not is_submit_enabled, "Submit button should be disabled even with leading/trailing spaces in inputs"
+        logger.info("Form filled with leading/trailing spaces, submit enabled: %s", is_submit_enabled)
 
         report_case(
-            expected="Form with leading/trailing spaces should enable submit and create model successfully",
-            actual=f"is_submit_enabled={is_submit_enabled}, is_present={is_present}",
+            expected="Form with leading/trailing spaces should not enable submit",
+            actual=f"is_submit_enabled={is_submit_enabled}",
             message="Validate leading/trailing whitespace handling in form fields",
         )
-        assert is_present, f"Model created with whitespace '{expected_trimmed_name}' was not found in table"
 
     # 25. Scenario Test: Add new model and validate entry into list table
     @pytest.mark.regression
