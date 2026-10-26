@@ -21,6 +21,7 @@ class AtcuGovtServerPage(BasePage):
     ROWS_SELECT = "select#rowsSelect"
     BACK_BTN = ".back-button"
     RELOAD_BTN = ".reload-button"
+    COMPONENT_HEADER = ".component-header"
     TOAST_MESSAGE = ".mat-mdc-snack-bar-label, simple-snack-bar, [data-sonner-toast]"
 
     # Details/Add Page Locators (/govt-servers-add)
@@ -171,7 +172,7 @@ class AtcuGovtServerPage(BasePage):
         try:
             row_locator = self.page.locator(f"//tr[td[contains(text(), '{state_name_or_abbr}')]]")
             row_locator.wait_for(state="visible", timeout=timeout)
-            is_vis = row_locator.is_visible()
+            is_vis = row_locator.first.is_visible()
             logger.info("State '%s' present in table: %s", state_name_or_abbr, is_vis)
             return is_vis
         except Exception as e:
@@ -259,13 +260,24 @@ class AtcuGovtServerPage(BasePage):
     def is_add_page_loaded(self):
         logger.info("Checking if Add Government Servers page is loaded")
         try:
-            self.page.locator(self.ADD_PAGE_CONTAINER).wait_for(
+            add_page = self.page.locator(self.ADD_PAGE_CONTAINER)
+            add_page.wait_for(
                 state="visible", timeout=10000
             )
-            return self.page.locator(self.ADD_PAGE_CONTAINER).is_visible()
+            is_visible = add_page.is_visible()
+            logger.info("Add Government Servers page load status: %s", is_visible)
+            return is_visible
         except Exception as e:
             logger.error("Add Government Servers page load check failed: %s", e)
             return False
+
+    def is_view_page_loaded(self):
+        logger.info("Checking if View Government Servers page is loaded")
+        page_header = self.page.locator(self.COMPONENT_HEADER)
+        page_header.wait_for(state="visible", timeout=10000)
+        is_visible = page_header.is_visible()
+        logger.info("View Government Servers page load status: %s", is_visible)
+        return is_visible
 
     def get_add_page_title(self):
         try:
@@ -322,6 +334,7 @@ class AtcuGovtServerPage(BasePage):
         logger.info("Clicking Submit button on Add Government Server form")
         btn = self.page.locator(self.SUBMIT_BTN)
         btn.wait_for(state="visible", timeout=5000)
+        self.is_submit_button_enabled()  # Ensure the button is enabled before clicking
         btn.click()
         self.page.wait_for_load_state("networkidle", timeout=10000)
 
@@ -359,4 +372,3 @@ class AtcuGovtServerPage(BasePage):
         except Exception as e:
             logger.error("Failed to get row details for state '%s': %s", state_name, e)
             return {}
-

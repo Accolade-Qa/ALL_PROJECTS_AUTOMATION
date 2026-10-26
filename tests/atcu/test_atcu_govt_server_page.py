@@ -128,7 +128,9 @@ class TestGovtServerPage:
         )
 
         assert len(headers) > 0, "Government Servers table headers list is empty"
-        assert all(header in expected_headers for header in headers), "Unexpected table headers found"
+        assert all(
+            header in expected_headers for header in headers
+        ), "Unexpected table headers found"
         assert (
             headers == expected_headers
         ), f"Government Servers table headers mismatched: {headers}"
@@ -153,6 +155,7 @@ class TestGovtServerPage:
         assert "NAME OF STATE" in first_row
         assert "STATE ABBREVIATION" in first_row
         assert "GOVT. IP1" in first_row
+        assert "PORT1" in first_row
 
     # 6. Test search by State Name (Positive)
     @pytest.mark.regression
@@ -727,18 +730,23 @@ class TestGovtServerPage:
             "Validating View action button for an existing government server row"
         )
         sample_state = "Bihar"
+        # from pages.common_utils.search import SearchHelper as sh
+        # sh.run_search(atcu_govt_server_page, sample_state)
+
         assert atcu_govt_server_page.is_state_present_in_table(sample_state)
 
         is_view_vis = atcu_govt_server_page.is_view_button_visible_for_row(sample_state)
+        assert is_view_vis, f"View button not visible for row '{sample_state}'"
+
         atcu_govt_server_page.click_view_button_for_row(sample_state)
-        is_add_loaded = atcu_govt_server_page.is_add_page_loaded()
+
+        is_add_loaded = atcu_govt_server_page.is_view_page_loaded()
 
         report_case(
             expected="Clicking View action button should navigate to Government Servers Details page",
             actual=f"is_view_vis={is_view_vis}, is_add_loaded={is_add_loaded}",
             message="Validate View action button navigation",
         )
-        assert is_view_vis, f"View button not visible for row '{sample_state}'"
         assert (
             is_add_loaded
         ), "Add/Details page failed to load after clicking View button"
