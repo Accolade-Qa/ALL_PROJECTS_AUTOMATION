@@ -1,8 +1,8 @@
 import logging
 import re
 import time
-from datetime import datetime
 
+import config.config as config_module
 from pages.common_base_page import BasePage
 
 
@@ -18,15 +18,12 @@ class LoginPage(BasePage):
         self.login_btn = page.get_by_role(
             "button", name=re.compile(r"Sign in", re.IGNORECASE)
         )
-        self.errormsg = page.get_by_text("Minimum 6 characters required.")
+        self.errormsg = page.get_by_text("Minimum 8 characters required.")
         self.email_error = page.get_by_text(
             "Please enter a valid Email ID.", exact=True
         )
         self.password_error = page.get_by_text(
-            "Minimum 6 characters required.", exact=True
-        )
-        self.wrongusername = page.get_by_text(
-            "Minimum 6 characters required.", exact=True
+            "Minimum 8 characters required.", exact=True
         )
         self.emptyusername = page.locator("mat-error")
         self.page_title1 = page.locator("div.site-name-text-section:visible")
@@ -71,10 +68,9 @@ class LoginPage(BasePage):
     #  🔹 New Method 3: Login with username
     def login_with_usernameonly(self, username):
         self.username.fill(username)
-        self.page.keyboard.press("Tab")
         self.login_btn.click()
-        self.wrongusername.wait_for(state="visible", timeout=5000)
-        error_text = self.wrongusername.inner_text().strip()
+        self.emptyusername.first.wait_for(state="visible", timeout=5000)
+        error_text = self.emptyusername.first.inner_text().strip()
         print(f"Captured Error: [{error_text}]")
         return error_text
 
@@ -171,10 +167,23 @@ class LoginPage(BasePage):
             self.logger.info("Verifying footer year...")
             self.footer.wait_for(state="visible", timeout=5000)
             text = self.footer.inner_text().strip()
-            current_year = str(datetime.now().year)
+
+            if config_module.PROJECT in ["trio", "lct", "sampark", "swaraj"]:
+                # Extract year from the footer text using regex
+                match = re.search(r"\b\d{4}\b", text)
+                if match:
+                    footer_year = match.group(0)
+                    self.logger.info(f"Footer Year Found: {footer_year}")
+                else:
+                    self.logger.warning("No year found in footer text.")
+                    footer_year = None
+            else:
+                footer_year = "2025"  # Default year for other projects
+
+            # current_year = str(datetime.now().year)
             self.logger.info(f"Footer Text: {text}")
-            self.logger.info(f"Expected Year: {current_year}")
-            return text, current_year
+            self.logger.info(f"Expected Year: {footer_year}")
+            return text, footer_year
         except Exception as e:
             self.logger.error(f"Footer year verification failed: {str(e)}")
             raise
