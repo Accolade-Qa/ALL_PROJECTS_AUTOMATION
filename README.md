@@ -74,26 +74,26 @@ Additional browser launch arguments can be injected in `conftest.py` via the `ar
 
 API code is organized by page/feature. `api/api_client.py` handles shared
 authentication and HTTP requests; each page-specific service and its endpoint
-constants live in a matching module. Tests get an `APIClient` through the `api`
-fixture and choose a service by feature:
+constants live in a matching module. In tests, request the matching fixture
+from `conftest.py`:
 
-| Page/feature | Use in a test | Service module |
+| Page/feature | Pytest fixture and example | Service module |
 |---|---|---|
-| Customer lists and creation | `api.customer...` | [`api/customer_api.py`](./api/customer_api.py) |
-| Device dashboard counts | `api.dashboard...` | [`api/device_dashboard_api.py`](./api/device_dashboard_api.py) |
-| Government servers and firmware | `api.govt_server...` | [`api/government_server_api.py`](./api/government_server_api.py) |
-| API login and authentication | `api.login()` | [`api/api_client.py`](./api/api_client.py) |
-| Role groups, including ATCU | `api.role_group...` | [`api/role_group_api.py`](./api/role_group_api.py) |
-| Roles | `api.role_management...` | [`api/role_management_api.py`](./api/role_management_api.py) |
-| SIM batch uploads | `api.sim_batch...` | [`api/sim_batch_api.py`](./api/sim_batch_api.py) |
-| TML tickets and status logs | `api.tml...` | [`api/tml_request_api.py`](./api/tml_request_api.py) |
-| User details | `api.user...` | [`api/user_api.py`](./api/user_api.py) |
-| ATCU OTA batches | `api.ota...` | [`api/atcu/ota_page_api.py`](./api/atcu/ota_page_api.py) |
+| Customer lists and creation | `customer_api.get_customer_list()` | [`api/customer_api.py`](./api/customer_api.py) |
+| Device dashboard counts | `dashboard_api.get_device_counts()` | [`api/device_dashboard_api.py`](./api/device_dashboard_api.py) |
+| Government servers and firmware | `govt_server_api.get_all_firmware()` | [`api/government_server_api.py`](./api/government_server_api.py) |
+| API login and authentication | `api_client.login()` | [`api/api_client.py`](./api/api_client.py) |
+| Role groups, including ATCU | `role_group_api.get_role_groups()` | [`api/role_group_api.py`](./api/role_group_api.py) |
+| Roles | `role_management_api.get_roles()` | [`api/role_management_api.py`](./api/role_management_api.py) |
+| SIM batch uploads | `sim_batch_api.get_sim_batch_details_by_csv()` | [`api/sim_batch_api.py`](./api/sim_batch_api.py) |
+| TML tickets and status logs | `tml_api.get_dash_counts()` | [`api/tml_request_api.py`](./api/tml_request_api.py) |
+| User details | `user_api.get_user_data_by_id()` | [`api/user_api.py`](./api/user_api.py) |
+| ATCU OTA batches | `ota_api.get_ota_batch_list()` | [`api/atcu/ota_page_api.py`](./api/atcu/ota_page_api.py) |
 
 Feature services share setup through [`api/api_service.py`](./api/api_service.py)
 and use the central client for HTTP requests. It logs in automatically before
-protected requests; call `api.login()` directly only when a test needs the login
-response.
+protected requests. Use the `api_client` fixture only when a test needs the login
+response or multiple feature services.
 
 ### How to add an API method
 
@@ -110,21 +110,22 @@ For an existing feature:
        return response.get("data", [])
    ```
 
-3. Add or update a test beside the related page tests. The test only needs the
-   `api` fixture; do not construct `APIClient` in a test:
+3. Add or update a test beside the related page tests. Request that feature’s
+   fixture; do not construct `APIClient` in a test:
 
    ```python
-   def test_customer_list_is_returned(api):
-       customers = api.customer.get_customer_list()
+   def test_customer_list_is_returned(customer_api):
+       customers = customer_api.get_customer_list()
        assert customers
    ```
 
    Put shared-feature tests in `tests/common/`; put ATCU-only tests in
    `tests/atcu/`.
 
-For a completely new feature, create its service module and register one
-instance in `APIClient.__init__`. You do not need a new pytest fixture for each
-service. The `api` fixture in `conftest.py` creates a fresh client for each test.
+For a completely new feature, create its service module, register one instance
+in `APIClient.__init__`, and add a matching fixture in `conftest.py` that returns
+the service from `api_client`. Each service fixture depends on the same
+function-scoped client within a test, so related operations share authentication.
 
 ## Multi-project support
 

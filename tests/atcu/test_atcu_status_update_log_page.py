@@ -41,7 +41,6 @@ class TestStatusUpdateLogPage:
     def test_atcu_status_update_log_page_loaded(
         self,
         atcu_status_update_log_page,
-        api,
         report_case,
     ):
         logger.info("Validating ATCU AIS140 Ticket Status Update Logs page load")
@@ -406,6 +405,7 @@ class TestStatusUpdateLogPage:
     def test_atcu_status_update_log_api_integration_post_request_and_verify_ui(
         self,
         atcu_status_update_log_page,
+        tml_api,
         report_case,
     ):
         """
@@ -418,7 +418,9 @@ class TestStatusUpdateLogPage:
         """
         logger.info("Step 1: Generating TML ticket request via API")
         try:
-            payload, created_vin, uin, iccid, ticket_no, api_data = api.tml.post_tml_request_log()
+            payload, created_vin, uin, iccid, ticket_no, api_data = (
+                tml_api.post_tml_request_log()
+            )
             logger.info("API generated VIN: %s, Ticket: %s", created_vin, ticket_no)
 
             logger.info("Step 2: Reloading Status Update Log UI page")

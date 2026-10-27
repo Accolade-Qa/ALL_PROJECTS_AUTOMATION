@@ -240,7 +240,7 @@ class TestAtcuViewOtaBatchPage:
             )
 
     def test_ota_batch_page_view_action_opens_batch_page(
-        self, atcu_ota_page, api, report_case
+        self, atcu_ota_page, ota_api, report_case
     ):
         """Verify the View action opens the selected OTA batch page."""
         from pages.common_utils import SearchHelper, TableSection
@@ -252,7 +252,7 @@ class TestAtcuViewOtaBatchPage:
         table_rows = table.get_table_data()
         assert table_rows, "Expected OTA batch rows to be present."
 
-        _, batch_ids = api.ota.get_ota_batch_list()
+        _, batch_ids = ota_api.get_ota_batch_list()
         assert batch_ids is not None and len(batch_ids) > 0, "Expected at least one batch ID from API."
 
         view_button = table.get_action_button(0, "visibility")
@@ -265,7 +265,7 @@ class TestAtcuViewOtaBatchPage:
             "**/ota-batch-view/*", wait_until="commit", timeout=5000
         )
         actual_url = batch_page.url
-        api.ota.get_ota_batch_kpi(batch_ref_id=batch_id)
+        ota_api.get_ota_batch_kpi(batch_ref_id=batch_id)
 
         report_case(
             expected=f"URL should contain 'ota-batch-view/{batch_id}'",

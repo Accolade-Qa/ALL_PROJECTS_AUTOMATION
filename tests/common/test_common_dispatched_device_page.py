@@ -439,7 +439,7 @@ class TestDispatchedDevicePage:
     @pytest.mark.ui
     @pytest.mark.regression
     def test_dispatched_device_page_customer_dropdown_matches_api_list(
-        self, dispatched_device_page, api, report_case
+        self, dispatched_device_page, customer_api, report_case
     ):
         logger.info(
             "Starting validation of Select Customer dropdown values "
@@ -448,7 +448,7 @@ class TestDispatchedDevicePage:
 
         logger.debug("Fetching customer list from API")
 
-        list_of_customers = api.customer.get_customer_list()
+        list_of_customers = customer_api.get_customer_list()
 
         # All added because on ui dropdown first option is All and then followed by customer list from api
         list_of_customers.insert(0, "All")
@@ -494,7 +494,7 @@ class TestDispatchedDevicePage:
     @pytest.mark.ui
     @pytest.mark.regression
     def test_dispatched_device_page_customer_dropdown_filters_table_by_selected_customer(
-        self, dispatched_device_page, api, report_case
+        self, dispatched_device_page, customer_api, report_case
     ):
         logger.info(
             "Starting validation of Select Customer dropdown functionality "
@@ -503,7 +503,7 @@ class TestDispatchedDevicePage:
 
         logger.debug("Fetching customer list from API")
 
-        list_of_customers = api.customer.get_customer_list()
+        list_of_customers = customer_api.get_customer_list()
 
         # All added because on ui dropdown first option is All and then followed by customer list from api
         list_of_customers.insert(0, "All")
@@ -960,7 +960,7 @@ class TestDispatchedDevicePage:
     @pytest.mark.ui
     @pytest.mark.regression
     def test_manual_upload_form_customer_dropdown_matches_api_list(
-        self, dispatched_device_page, api, report_case
+        self, dispatched_device_page, customer_api, report_case
     ):
         logger.info(
             "Starting validation of Select Customer dropdown in Manual Upload form "
@@ -976,7 +976,7 @@ class TestDispatchedDevicePage:
 
         logger.debug("Fetching customer list from API")
 
-        list_of_customers = api.customer.get_customer_list()
+        list_of_customers = customer_api.get_customer_list()
 
         logger.info(
             "Customer list fetched successfully from API | total customers=%s",
@@ -1141,7 +1141,7 @@ class TestDispatchedDevicePage:
     @pytest.mark.ui
     @pytest.mark.regression
     def test_manual_upload_form_submission_succeeds_with_valid_device_uid(
-        self, test_data, project_config, dispatched_device_page, api, report_case
+        self, test_data, project_config, dispatched_device_page, customer_api, report_case
     ):
         device_data = DeviceData()
         device_valid_uin_list = device_data.device_valid_uin
@@ -1159,7 +1159,7 @@ class TestDispatchedDevicePage:
         valid_uid = device_valid_uin_list[randint(0, len(device_valid_uin_list) - 1)]
 
         # add random customer name and then use here
-        _, customer = api.customer.save_customer()
+        _, customer = customer_api.save_customer()
 
         dispatched_device_page.page.reload()
         dispatched_device_page.page.wait_for_load_state("networkidle")

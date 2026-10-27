@@ -959,9 +959,63 @@ def atcu_ota_master_page(page, project_config):
 
 
 
-# API fixture
 @pytest.fixture
-def api():
-    """Provide a fresh API client for one test."""
+def api_client():
+    """Provide a fresh shared API client for one test."""
     from api import APIClient
+
     return APIClient()
+
+
+@pytest.fixture
+def customer_api(api_client):
+    """Provide API operations for customer-related pages."""
+    return api_client.customer
+
+
+@pytest.fixture
+def dashboard_api(api_client):
+    """Provide API operations for the device dashboard page."""
+    return api_client.dashboard
+
+
+@pytest.fixture
+def govt_server_api(api_client):
+    """Provide API operations for the government-server page."""
+    return api_client.govt_server
+
+
+@pytest.fixture
+def role_group_api(api_client):
+    """Provide API operations for common and ATCU role-group pages."""
+    return api_client.role_group
+
+
+@pytest.fixture
+def role_management_api(api_client):
+    """Provide API operations for the role-management page."""
+    return api_client.role_management
+
+
+@pytest.fixture
+def sim_batch_api(api_client):
+    """Provide API operations for the SIM batch details page."""
+    return api_client.sim_batch
+
+
+@pytest.fixture
+def tml_api(api_client):
+    """Provide API operations for ATCU ticket and status-log pages."""
+    return api_client.tml
+
+
+@pytest.fixture
+def user_api(api_client):
+    """Provide API operations for profile and user-management pages."""
+    return api_client.user
+
+
+@pytest.fixture
+def ota_api(api_client):
+    """Provide API operations for the ATCU OTA page."""
+    return api_client.ota

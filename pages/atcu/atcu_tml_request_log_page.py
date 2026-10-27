@@ -89,7 +89,7 @@ class AtcuTmlRequestLogPage(BasePage):
 
         return payloads
 
-    def get_tml_request_payload_by_api(self, api):
+    def get_tml_request_payload_by_api(self, tml_api):
         """
         Returns the payload values from the TML Request Log API.
         """
@@ -97,7 +97,7 @@ class AtcuTmlRequestLogPage(BasePage):
         logger.info("Fetching payload values from the TML Request Log API")
 
         payload, VIN, UIN, ICCID, ticket_number, data = (
-            api.tml.post_tml_request_log()
+            tml_api.post_tml_request_log()
         )
 
         logger.debug(
@@ -251,7 +251,7 @@ class AtcuTmlRequestLogPage(BasePage):
             logger.error(str(e))
             return False
 
-    def create_multiple_tickets_concurrently(self, api):
+    def create_multiple_tickets_concurrently(self, tml_api):
         """Generate multiple TML tickets simultaneously and validate uniqueness."""
 
         payloads = []
@@ -312,8 +312,8 @@ class AtcuTmlRequestLogPage(BasePage):
                 }
             )
 
-        token = api.tml.get_token()
-        endpoint = api.tml.build_ticket_url(GENERATE_TML_TICKET)
+        token = tml_api.get_token()
+        endpoint = tml_api.build_ticket_url(GENERATE_TML_TICKET)
 
         headers = {
             "Content-Type": "application/json",

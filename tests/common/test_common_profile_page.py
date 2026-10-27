@@ -39,12 +39,12 @@ class TestProfilePage:
     @pytest.mark.ui
     @pytest.mark.regression
     def test_profile_page_login_data_for_validation(
-        self, profile_page, project_config, api, report_case
+        self, profile_page, project_config, api_client, report_case
     ):
         """Test fetching login data using API client."""
         logger.info("Testing login data retrieval from ProfilePage")
         try:
-            login_data = profile_page.get_login_data(api)
+            login_data = profile_page.get_login_data(api_client)
             logger.debug("Login data fetched from profile page: %s", login_data)
             report_case(
                 expected="Login data with all required fields and 16 permissions",
@@ -286,7 +286,7 @@ class TestProfilePage:
     @pytest.mark.ui
     @pytest.mark.regression
     def test_profile_page_validate_input_fields_values_with_actual_data(
-        self, profile_page, api, report_case
+        self, profile_page, user_api, report_case
     ):
         """
         Test validating that input fields on the profile page
@@ -297,7 +297,7 @@ class TestProfilePage:
 
         try:
             # Fetch user data from API
-            user_data = api.user.get_user_data_by_id()
+            user_data = user_api.get_user_data_by_id()
             logger.debug("Fetched user data from API: %s", user_data)
 
             # Get input fields from profile page

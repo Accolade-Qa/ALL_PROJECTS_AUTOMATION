@@ -35,10 +35,10 @@ class TestRoleGroupPage:
     @pytest.mark.api
     @pytest.mark.regression
     @pytest.mark.smoke
-    def test_atcu_role_group_page_delete_roles_api(self, api, report_case):
+    def test_atcu_role_group_page_delete_roles_api(self, role_group_api, report_case):
         """Test deleting a role permission."""
         logger.info("Testing delete role permission functionality")
-        result = api.role_group.delete_atcu_role_groups()
+        result = role_group_api.delete_atcu_role_groups()
         report_case(
             expected=True,
             actual=result.get("success"),

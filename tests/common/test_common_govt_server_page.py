@@ -825,22 +825,22 @@ class TestGovtServerPage:
     @pytest.mark.smoke
     @pytest.mark.regression
     def test_govt_server_firmware_api_endpoints_validation(
-        self, govt_server_page, api, report_case
+        self, govt_server_page, govt_server_api, report_case
     ):
         logger.info("Starting validation of firmware APIs")
-        all_firmwares = api.govt_server.get_all_firmware()
+        all_firmwares = govt_server_api.get_all_firmware()
         # logger.info(f"all firmwares -> ", all_firmwares)
         total_firmware_count = len(all_firmwares)
 
-        oc_firmwares_not_added_in_server = api.govt_server.get_oc_firmwares_not_added()
+        oc_firmwares_not_added_in_server = govt_server_api.get_oc_firmwares_not_added()
 
-        oc_firmwares = api.govt_server.get_oc_firmwares_added_in_state()
+        oc_firmwares = govt_server_api.get_oc_firmwares_added_in_state()
         # logger.info(f"oc firmwares -> ", oc_firmwares)
         oc_firmware_count_not_added_count = len(oc_firmwares_not_added_in_server)
         oc_firmware_count_added_count = len(oc_firmwares)
 
-        d_firmwares_not_added_in_server = api.govt_server.get_d_firmwares_not_added()
-        d_firmwares = api.govt_server.get_d_firmwares_added_in_state()
+        d_firmwares_not_added_in_server = govt_server_api.get_d_firmwares_not_added()
+        d_firmwares = govt_server_api.get_d_firmwares_added_in_state()
 
         # logger.info(f"d firmwares -> ", d_firmwares)
         d_firmware_count_not_added_count = len(d_firmwares_not_added_in_server)
@@ -1043,7 +1043,7 @@ class TestGovtServerPage:
     @pytest.mark.smoke
     @pytest.mark.regression
     def test_govt_server_page_validate_input_fields_with_actual_api_data(
-        self, govt_server_page, api, report_case, project_config
+        self, govt_server_page, govt_server_api, report_case, project_config
     ):
         """Validate UI input field data with actual API response data"""
 
@@ -1056,7 +1056,7 @@ class TestGovtServerPage:
         else:
             state_name = "Shital"
 
-        response, _, _ = api.govt_server.get_state_server_details_by_name(
+        response, _, _ = govt_server_api.get_state_server_details_by_name(
             state_name=state_name
         )
 
@@ -1154,7 +1154,7 @@ class TestGovtServerPage:
     def test_govt_server_page_validate_oc_firmware_with_ui_table(
         self,
         govt_server_page,
-        api,
+        govt_server_api,
         report_case,
     ):
         """
@@ -1171,7 +1171,7 @@ class TestGovtServerPage:
         govt_server_page.page.wait_for_load_state("networkidle")
 
         # API Data
-        api_oc_firmwares = api.govt_server.get_oc_firmwares_not_added()
+        api_oc_firmwares = govt_server_api.get_oc_firmwares_not_added()
 
         logger.info(
             "API Response: %s",
@@ -1949,7 +1949,7 @@ class TestGovtServerPage:
     def test_govt_server_page_after_click_submit_adds_firmware_in_open_cpu_firmware_list(
         self,
         govt_server_page,
-        api,
+        govt_server_api,
         report_case,
     ):
         """
@@ -1967,7 +1967,7 @@ class TestGovtServerPage:
         govt_server_page.search_respective_server()
 
         # Step 2: Get currently added OC firmwares count from API for the selected state
-        api_before = api.govt_server.get_oc_firmwares_added_in_state(
+        api_before = govt_server_api.get_oc_firmwares_added_in_state(
             state_name="SURAJ",
         )
 
@@ -2040,7 +2040,7 @@ class TestGovtServerPage:
         logger.info("Submit action completed")
 
         # Step 8: Get OC firmware count from API after submit for the selected state
-        api_after = api.govt_server.get_oc_firmwares_added_in_state(
+        api_after = govt_server_api.get_oc_firmwares_added_in_state(
             state_name="SURAJ",
         )
 

@@ -26,7 +26,6 @@ class TestTicketDashboardPage:
     def test_atcu_ticket_dashboard_page_loaded(
         self,
         atcu_ticket_dashboard_page,
-        api,
         report_case,
     ):
         logger.info("Validating ATCU Ticket Dashboard page load")
@@ -44,7 +43,6 @@ class TestTicketDashboardPage:
     def test_atcu_ticket_dashboard_page_title(
         self,
         atcu_ticket_dashboard_page,
-        api,
         report_case,
     ):
         logger.info("Validating ATCU Ticket Dashboard page title")
@@ -606,12 +604,13 @@ class TestTicketDashboardPage:
     def test_atcu_ticket_dashboard_api_counts_validation_vs_ui(
         self,
         atcu_ticket_dashboard_page,
+        tml_api,
         report_case,
     ):
         logger.info("Validating UI KPI Card counts against /api/crm/getDashCounts API endpoint")
         ui_counts = atcu_ticket_dashboard_page.get_all_kpi_counts()
 
-        api_response = api.tml.get_dash_counts()
+        api_response = tml_api.get_dash_counts()
         api_data = api_response.get("data", {}) if isinstance(api_response, dict) else {}
 
         api_all = api_data.get("all", 0) if isinstance(api_data, dict) else 0
@@ -635,7 +634,7 @@ class TestTicketDashboardPage:
     def test_atcu_ticket_dashboard_generate_ticket_api_count_increment_and_ui_sync(
         self,
         atcu_ticket_dashboard_page,
-        api,
+        tml_api,
         project_config,
         report_case,
     ):
@@ -645,16 +644,16 @@ class TestTicketDashboardPage:
         initial_ui_in_progress = atcu_ticket_dashboard_page.get_kpi_card_count("IN PROGRESS")
         initial_ui_on_hold = atcu_ticket_dashboard_page.get_kpi_card_count("ON HOLD")
 
-        pre_api_resp = api.tml.get_dash_counts()
+        pre_api_resp = tml_api.get_dash_counts()
         pre_api_data = pre_api_resp.get("data", {}) if isinstance(pre_api_resp, dict) else {}
         pre_api_all = pre_api_data.get("all", 0)
 
-        payload, VIN, UIN, ICCID, ticket_number, data = api.tml.post_tml_request_log()
+        payload, VIN, UIN, ICCID, ticket_number, data = tml_api.post_tml_request_log()
         search_term = ticket_number or VIN or UIN or (payload[0].get("VIN_NO") if payload else "")
         logger.info("Ticket API generated info: ticket_number='%s', VIN='%s', UIN='%s' | search_term='%s'", ticket_number, VIN, UIN, search_term)
         assert search_term, "Ticket generation API failed to return ticket details (TICKET_NO / VIN / UIN)"
 
-        post_api_resp = api.tml.get_dash_counts()
+        post_api_resp = tml_api.get_dash_counts()
         post_api_data = post_api_resp.get("data", {}) if isinstance(post_api_resp, dict) else {}
         post_api_all = post_api_data.get("all", 0)
 

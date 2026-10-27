@@ -40,11 +40,11 @@ class TestRoleManagementPage:
     @pytest.mark.regression
     @pytest.mark.smoke
     def test_role_management_page_delete_roles_api(
-        self, role_management_page, api, report_case
+        self, role_management_page, role_management_api, report_case
     ):
         """Test deleting a role permission."""
         logger.info("Testing delete role permission functionality")
-        result = api.role_management.delete_roles()
+        result = role_management_api.delete_roles()
         report_case(
             expected=True,
             actual=result.get("success"),
