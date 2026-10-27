@@ -83,6 +83,7 @@ class TestTmlRequestLogPage:
     def test_tml_request_log_page_payload_validation_on_ui(
         self,
         tml_request_log_page,
+        api,
         report_case,
     ):
         logger.info("Validating TML Request Log payload on UI")
@@ -95,7 +96,7 @@ class TestTmlRequestLogPage:
             expected_iccid,
             ticket_number,
             _ ,
-        ) = tml_request_log_page.get_tml_request_payload_by_api()
+        ) = tml_request_log_page.get_tml_request_payload_by_api(api)
 
         # API payload is returned as list[dict]
         expected_dict = (
@@ -177,6 +178,7 @@ class TestTmlRequestLogPage:
     def test_tml_request_log_page_search(
         self,
         tml_request_log_page,
+        api,
         report_case,
     ):
         logger.info("Validating TML Request Log page search functionality")
@@ -188,7 +190,7 @@ class TestTmlRequestLogPage:
             _,
             _,
             _,
-        ) = tml_request_log_page.get_tml_request_payload_by_api()
+        ) = tml_request_log_page.get_tml_request_payload_by_api(api)
 
         search_result = tml_request_log_page.search_logs(expected_vin)
 
@@ -362,6 +364,7 @@ class TestTmlRequestLogPage:
     def test_tml_request_log_page_fota_batch_addition(
         self,
         tml_request_log_page,
+        api,
         project_config,
         report_case,
     ):
@@ -374,7 +377,7 @@ class TestTmlRequestLogPage:
             _,
             ticket_number,
             _,
-        ) = tml_request_log_page.get_tml_request_payload_by_api()
+        ) = tml_request_log_page.get_tml_request_payload_by_api(api)
 
         expected_payload = (
             api_payload[0] if isinstance(api_payload, list) else api_payload
@@ -434,11 +437,12 @@ class TestTmlRequestLogPage:
     def test_tml_request_log_page_concurrent_ticket_generation_uniqueness(
         self,
         tml_request_log_page,
+        api,
         report_case,
     ):
         logger.info("Validating simultaneous ticket generation")
 
-        result = tml_request_log_page.create_multiple_tickets_concurrently()
+        result = tml_request_log_page.create_multiple_tickets_concurrently(api)
 
         report_case(
             expected="All concurrent requests should generate unique ticket numbers",

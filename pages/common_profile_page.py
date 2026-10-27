@@ -1,13 +1,7 @@
 from .common_base_page import BasePage
 from api import APIClient
 from utils.logger import get_logger
-from config.config import (
-    API_BASE_URL,
-    API_USERNAME,
-    API_PASSWORD,
-    PASSWORD,
-    USERNAME,
-)
+from config.config import PASSWORD, USERNAME
 
 logger = get_logger(__name__)
 
@@ -16,18 +10,15 @@ class ProfilePage(BasePage):
     def __init__(self, page):
         super().__init__(page)
 
-    def get_login_data(self):
+    def get_login_data(self, api):
         """Fetch login data using APIClient."""
         logger.info("Fetching login data using APIClient")
         try:
-            api = APIClient()
-            login_data = api.login_api.login(
+            api = api or APIClient(
                 username=USERNAME,
                 password=PASSWORD,
-                api_base_url=API_BASE_URL,
-                api_username=API_USERNAME,
-                api_password=API_PASSWORD,
             )
+            login_data = api.login()
             logger.info("Successfully fetched login data")
             return login_data
         except Exception as e:

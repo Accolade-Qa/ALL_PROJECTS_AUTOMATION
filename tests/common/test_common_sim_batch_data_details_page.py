@@ -402,23 +402,3 @@ class TestSimBatchDataDetailsPage:
             assert (
                 sim_data_details_page.is_results_table_visible()
             ), "Results table should be visible after submitting valid file"
-
-    # def test_validate_tables_with_api(self, page, sim_data_details_page):
-    # logger.info("Validating UI tables against API")
-
-    # # Upload file or enter ICCID (depends on your flow)
-    # sim_data_details_page.upload_valid_file(
-    #     str(TEST_DATA_DIR / "Sensorise_SIM_data_Details.xlsx")
-    # )
-
-    # sim_data_details_page.click_submit_button()
-
-    # # Wait for UI
-    # page.wait_for_load_state("networkidle")
-
-    # # Fetch API data
-    # api = APIClient()
-    # api_data = api.sim_batch.get_sim_batch_details_by_csv(file_path=...)
-
-    # # Validate UI vs API
-    # sim_data_details_page.validate_tables_against_api(api_data)

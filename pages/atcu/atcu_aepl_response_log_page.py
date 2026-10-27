@@ -88,11 +88,11 @@ class AtcuAeplResponseLogPage(BasePage):
 
         return result
 
-    def get_valid_request_response_by_api(self):
+    def get_valid_request_response_by_api(self, api):
         logger.info("Fetching valid request-response pairs from AEPL Response Log API")
 
         payload, VIN, UIN, ICCID, ticket_number, data = (
-            self.request_log.get_tml_request_payload_by_api()
+            self.request_log.get_tml_request_payload_by_api(api)
         )
 
         return payload, VIN, UIN, ICCID, ticket_number, data
@@ -108,4 +108,3 @@ class AtcuAeplResponseLogPage(BasePage):
             )
         logger.debug("Retrieved first row data: %s", first_row_data)
         return first_row_data
-

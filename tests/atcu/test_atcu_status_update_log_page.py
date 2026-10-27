@@ -2,7 +2,6 @@ import json
 import time
 import pytest
 
-from api import APIClient
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -42,6 +41,7 @@ class TestStatusUpdateLogPage:
     def test_atcu_status_update_log_page_loaded(
         self,
         atcu_status_update_log_page,
+        api,
         report_case,
     ):
         logger.info("Validating ATCU AIS140 Ticket Status Update Logs page load")
@@ -418,7 +418,6 @@ class TestStatusUpdateLogPage:
         """
         logger.info("Step 1: Generating TML ticket request via API")
         try:
-            api = APIClient()
             payload, created_vin, uin, iccid, ticket_no, api_data = api.tml.post_tml_request_log()
             logger.info("API generated VIN: %s, Ticket: %s", created_vin, ticket_no)
 

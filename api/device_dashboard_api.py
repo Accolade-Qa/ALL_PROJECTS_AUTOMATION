@@ -1,42 +1,31 @@
-from utils.logger import get_logger
-from .endpoints import (
-    GET_DISCARDED_DEVICE_COUNT,
-    GET_DISPATCHED_DEVICE_COUNT,
-    GET_INSTALLED_DEVICE_COUNT,
-    GET_PRODUCTION_DEVICE_COUNT,
-)
+"""API operations used by the device dashboard page."""
 
-logger = get_logger(__name__)
+from .api_service import APIService
 
 
-class DeviceDashboardAPI:
-    """Device dashboard operations."""
+DEVICE_COUNTS = {
+    "TOTAL PRODUCTION DEVICES": (
+        "/device/getProductionDeviceCount?selectedDeviceModelId=&selectedCustomerId="
+    ),
+    "TOTAL DISPATCHED DEVICES": (
+        "/device/getDispatchDeviceCount?selectedDeviceModelId=&selectedCustomerId="
+    ),
+    "TOTAL INSTALLED DEVICES": (
+        "/device/getInstalledDeviceCount?selectedDeviceModelId=&selectedCustomerId="
+    ),
+    "TOTAL DISCARDED DEVICES": (
+        "/device/getDiscardedDeviceCount?selectedDeviceModelId=&selectedCustomerId="
+    ),
+}
 
-    def __init__(self, client=None):
-        self._client = client
 
-    def get_device_counts(self=None, *args, **kwargs):
-        """Fetch device status counts from API.
-
-        Usage:
-            api = APIClient()
-            counts = api.dashboard.get_device_counts()
-        """
-        if not isinstance(self, DeviceDashboardAPI):
-            from .api_client import APIClient
-            return APIClient.get_default().dashboard.get_device_counts(*args, **kwargs)
-
-        endpoints = {
-            "TOTAL PRODUCTION DEVICES": GET_PRODUCTION_DEVICE_COUNT,
-            "TOTAL DISPATCHED DEVICES": GET_DISPATCHED_DEVICE_COUNT,
-            "TOTAL INSTALLED DEVICES": GET_INSTALLED_DEVICE_COUNT,
-            "TOTAL DISCARDED DEVICES": GET_DISCARDED_DEVICE_COUNT,
-        }
+class DeviceDashboardAPI(APIService):
+    def get_device_counts(self):
         counts = {}
-        for title, endpoint in endpoints.items():
-            data = self._client.get(endpoint)
-            val = data.get("data") if data.get("data") is not None else data.get("count", 0)
-            counts[title] = int(val) if val is not None else 0
-
-        logger.info("Fetched device counts: %s", counts)
+        for title, endpoint in DEVICE_COUNTS.items():
+            response = self._client.get(endpoint)
+            value = response.get("data")
+            if value is None:
+                value = response.get("count", 0)
+            counts[title] = int(value or 0)
         return counts

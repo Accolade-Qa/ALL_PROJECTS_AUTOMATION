@@ -1,7 +1,6 @@
 import pytest
 
 from utils.logger import get_logger
-from api import APIClient
 
 logger = get_logger(__name__)
 
@@ -27,6 +26,7 @@ class TestTicketDashboardPage:
     def test_atcu_ticket_dashboard_page_loaded(
         self,
         atcu_ticket_dashboard_page,
+        api,
         report_case,
     ):
         logger.info("Validating ATCU Ticket Dashboard page load")
@@ -44,6 +44,7 @@ class TestTicketDashboardPage:
     def test_atcu_ticket_dashboard_page_title(
         self,
         atcu_ticket_dashboard_page,
+        api,
         report_case,
     ):
         logger.info("Validating ATCU Ticket Dashboard page title")
@@ -610,7 +611,6 @@ class TestTicketDashboardPage:
         logger.info("Validating UI KPI Card counts against /api/crm/getDashCounts API endpoint")
         ui_counts = atcu_ticket_dashboard_page.get_all_kpi_counts()
 
-        api = APIClient()
         api_response = api.tml.get_dash_counts()
         api_data = api_response.get("data", {}) if isinstance(api_response, dict) else {}
 
@@ -635,6 +635,7 @@ class TestTicketDashboardPage:
     def test_atcu_ticket_dashboard_generate_ticket_api_count_increment_and_ui_sync(
         self,
         atcu_ticket_dashboard_page,
+        api,
         project_config,
         report_case,
     ):
@@ -644,7 +645,6 @@ class TestTicketDashboardPage:
         initial_ui_in_progress = atcu_ticket_dashboard_page.get_kpi_card_count("IN PROGRESS")
         initial_ui_on_hold = atcu_ticket_dashboard_page.get_kpi_card_count("ON HOLD")
 
-        api = APIClient()
         pre_api_resp = api.tml.get_dash_counts()
         pre_api_data = pre_api_resp.get("data", {}) if isinstance(pre_api_resp, dict) else {}
         pre_api_all = pre_api_data.get("all", 0)

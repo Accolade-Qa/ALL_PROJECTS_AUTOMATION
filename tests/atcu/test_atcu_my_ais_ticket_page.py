@@ -1,7 +1,9 @@
 import pytest
 
 from pages.atcu.atcu_my_ais_ticket_page import AtcuMyAisTicketPage
-from utils.logger import logger
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 @pytest.mark.ticket

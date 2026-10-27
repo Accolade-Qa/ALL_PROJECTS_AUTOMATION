@@ -5,7 +5,6 @@ from pages.common_utils.search import SearchHelper
 from test_data.lct.device_data import DeviceData
 from utils.logger import get_logger
 from pages.common_base_page import BasePage
-from api import APIClient
 from config.config import DISPATCHED_DEVICE_URL
 
 import pytest
@@ -440,7 +439,7 @@ class TestDispatchedDevicePage:
     @pytest.mark.ui
     @pytest.mark.regression
     def test_dispatched_device_page_customer_dropdown_matches_api_list(
-        self, dispatched_device_page, report_case
+        self, dispatched_device_page, api, report_case
     ):
         logger.info(
             "Starting validation of Select Customer dropdown values "
@@ -449,7 +448,6 @@ class TestDispatchedDevicePage:
 
         logger.debug("Fetching customer list from API")
 
-        api = APIClient()
         list_of_customers = api.customer.get_customer_list()
 
         # All added because on ui dropdown first option is All and then followed by customer list from api
@@ -496,7 +494,7 @@ class TestDispatchedDevicePage:
     @pytest.mark.ui
     @pytest.mark.regression
     def test_dispatched_device_page_customer_dropdown_filters_table_by_selected_customer(
-        self, dispatched_device_page, report_case
+        self, dispatched_device_page, api, report_case
     ):
         logger.info(
             "Starting validation of Select Customer dropdown functionality "
@@ -505,7 +503,6 @@ class TestDispatchedDevicePage:
 
         logger.debug("Fetching customer list from API")
 
-        api = APIClient()
         list_of_customers = api.customer.get_customer_list()
 
         # All added because on ui dropdown first option is All and then followed by customer list from api
@@ -963,7 +960,7 @@ class TestDispatchedDevicePage:
     @pytest.mark.ui
     @pytest.mark.regression
     def test_manual_upload_form_customer_dropdown_matches_api_list(
-        self, dispatched_device_page, report_case
+        self, dispatched_device_page, api, report_case
     ):
         logger.info(
             "Starting validation of Select Customer dropdown in Manual Upload form "
@@ -979,7 +976,6 @@ class TestDispatchedDevicePage:
 
         logger.debug("Fetching customer list from API")
 
-        api = APIClient()
         list_of_customers = api.customer.get_customer_list()
 
         logger.info(
@@ -1145,7 +1141,7 @@ class TestDispatchedDevicePage:
     @pytest.mark.ui
     @pytest.mark.regression
     def test_manual_upload_form_submission_succeeds_with_valid_device_uid(
-        self, test_data, project_config, dispatched_device_page, report_case
+        self, test_data, project_config, dispatched_device_page, api, report_case
     ):
         device_data = DeviceData()
         device_valid_uin_list = device_data.device_valid_uin
@@ -1163,7 +1159,6 @@ class TestDispatchedDevicePage:
         valid_uid = device_valid_uin_list[randint(0, len(device_valid_uin_list) - 1)]
 
         # add random customer name and then use here
-        api = APIClient()
         _, customer = api.customer.save_customer()
 
         dispatched_device_page.page.reload()

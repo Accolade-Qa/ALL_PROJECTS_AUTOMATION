@@ -1,48 +1,49 @@
-from utils.logger import get_logger
-from .endpoints import DELETE_ROLE_GROUP, GET_ROLE_GROUPS
+"""API operations used by common and ATCU role-group pages."""
 
-logger = get_logger(__name__)
+from .api_service import APIService
 
 
-class RoleGroupAPI:
-    """Role group API operations."""
+GET_ROLE_GROUPS = "/roleGroup/getRolesGroup?page=0&size=1000&search="
+GET_ATCU_ROLE_GROUPS = "/api/roleGroup/fetchRoleGroup"
+DELETE_ROLE_GROUP = "/roleGroup/deleteRoleGroup?id={group_id}"
+DELETE_ATCU_ROLE_GROUP = "/api/userRole/userRoleDelete?userRole={user_role}"
 
-    def __init__(self, client=None):
-        self._client = client
 
-    def get_role_groups(self=None, *args, **kwargs):
-        """Fetch all role groups."""
-        if not isinstance(self, RoleGroupAPI):
-            from .api_client import APIClient
-            return APIClient.get_default().role_group.get_role_groups(*args, **kwargs)
-
+class RoleGroupAPI(APIService):
+    def get_role_groups(self):
         return self._client.get(GET_ROLE_GROUPS)
 
-    def delete_role_group(self=None, group_id=None, *args, **kwargs):
-        """Delete role group by ID."""
-        if not isinstance(self, RoleGroupAPI):
-            from .api_client import APIClient
-            return APIClient.get_default().role_group.delete_role_group(group_id, *args, **kwargs)
-
-        for a in args:
-            if isinstance(a, (int, str)) and not hasattr(a, "request"):
-                group_id = a
-                break
+    def delete_role_group(self, group_id):
         endpoint = DELETE_ROLE_GROUP.format(group_id=group_id)
         return self._client.delete(endpoint)
 
-    def delete_role_groups(self=None, *args, **kwargs):
-        """Attempt to delete all role groups."""
-        if not isinstance(self, RoleGroupAPI):
-            from .api_client import APIClient
-            return APIClient.get_default().role_group.delete_role_groups(*args, **kwargs)
+    def delete_role_groups(self):
+        total, failed_ids = self._delete_items(
+            self.get_role_groups(),
+            self.delete_role_group,
+            "group",
+        )
+        return {
+            "success": not failed_ids,
+            "total_groups_processed": total,
+            "failed_group_ids": failed_ids,
+        }
 
-        response = self.get_role_groups()
-        total_roles = response.get("totalItems", 0)
-        for i in range(1, total_roles + 1):
-            try:
-                self.delete_role_group(i)
-            except Exception as e:
-                if "Cannot delete group" in str(e):
-                    continue
-        return {"success": True, "total_groups_processed": total_roles}
+    def get_atcu_role_groups(self):
+        return self._client.get(GET_ATCU_ROLE_GROUPS)
+
+    def delete_atcu_role_group(self, user_role):
+        endpoint = DELETE_ATCU_ROLE_GROUP.format(user_role=user_role)
+        return self._client.delete(endpoint)
+
+    def delete_atcu_role_groups(self):
+        total, failed_ids = self._delete_items(
+            self.get_atcu_role_groups(),
+            self.delete_atcu_role_group,
+            "group",
+        )
+        return {
+            "success": not failed_ids,
+            "total_groups_processed": total,
+            "failed_group_ids": failed_ids,
+        }

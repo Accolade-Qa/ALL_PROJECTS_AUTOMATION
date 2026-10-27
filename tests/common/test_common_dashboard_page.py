@@ -1,4 +1,3 @@
-from api import APIClient
 from pages.common_base_page import BasePage
 from utils.logger import get_logger
 
@@ -157,10 +156,9 @@ class TestDashboardPage:
     @pytest.mark.ui
     @pytest.mark.regression
     def test_dashboard_page_card_counts_match_api_data(
-        self, page, dashboard_page, report_case
+        self, page, dashboard_page, api, report_case
     ):
         logger.info("Verifying dashboard card counts against API")
-        api = APIClient()
         api_results = api.dashboard.get_device_counts()
         logger.debug("Dashboard API card counts: %s", api_results)
         actual_results = {}

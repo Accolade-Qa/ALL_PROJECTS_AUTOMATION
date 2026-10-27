@@ -102,10 +102,12 @@ class TestAeplResponseLogPage:
     @pytest.mark.ui
     @pytest.mark.api
     @pytest.mark.smoke
-    def test_aepl_response_log_page_api_payload_integrity(self, aepl_response_log_page, report_case):
+    def test_aepl_response_log_page_api_payload_integrity(
+        self, aepl_response_log_page, api, report_case
+    ):
         logger.info("Validating AEPL Response Log request-response pairs")
         payload, VIN, UIN, ICCID, ticket_number, data = (
-            aepl_response_log_page.get_valid_request_response_by_api()
+            aepl_response_log_page.get_valid_request_response_by_api(api)
         )
         report_case(
             expected="Valid request-response pairs should be fetched from AEPL Response Log API",

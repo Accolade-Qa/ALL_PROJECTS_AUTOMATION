@@ -1,6 +1,5 @@
 from conftest import project_config
 from utils.logger import get_logger
-from api import APIClient
 from config.config import EXPECTED_PERMISSION_COUNT
 
 import pytest
@@ -39,11 +38,13 @@ class TestProfilePage:
     @pytest.mark.smoke
     @pytest.mark.ui
     @pytest.mark.regression
-    def test_profile_page_login_data_for_validation(self, profile_page, project_config, report_case):
+    def test_profile_page_login_data_for_validation(
+        self, profile_page, project_config, api, report_case
+    ):
         """Test fetching login data using API client."""
         logger.info("Testing login data retrieval from ProfilePage")
         try:
-            login_data = profile_page.get_login_data()
+            login_data = profile_page.get_login_data(api)
             logger.debug("Login data fetched from profile page: %s", login_data)
             report_case(
                 expected="Login data with all required fields and 16 permissions",
@@ -285,14 +286,12 @@ class TestProfilePage:
     @pytest.mark.ui
     @pytest.mark.regression
     def test_profile_page_validate_input_fields_values_with_actual_data(
-        self, profile_page, report_case
+        self, profile_page, api, report_case
     ):
         """
         Test validating that input fields on the profile page
         have correct values matching the actual data from API.
         """
-
-        api = APIClient()
 
         logger.info("Testing profile page input fields values validation")
 

@@ -1,6 +1,6 @@
 from utils.helpers import Helpers
 from pages.common_base_page import BasePage
-from api import APIClient
+from api.tml_request_api import GENERATE_TML_TICKET
 from pages.common_utils import SearchHelper, TableSection, PaginationHelper
 import asyncio
 import threading
@@ -89,15 +89,16 @@ class AtcuTmlRequestLogPage(BasePage):
 
         return payloads
 
-    def get_tml_request_payload_by_api(self):
+    def get_tml_request_payload_by_api(self, api):
         """
         Returns the payload values from the TML Request Log API.
         """
 
         logger.info("Fetching payload values from the TML Request Log API")
 
-        tml_client = APIClient()
-        payload, VIN, UIN, ICCID, ticket_number, data = tml_client.tml.post_tml_request_log()
+        payload, VIN, UIN, ICCID, ticket_number, data = (
+            api.tml.post_tml_request_log()
+        )
 
         logger.debug(
             "Retrieved payload from API: %s, VIN: %s, UIN: %s, ICCID: %s, Ticket Number: %s, Data: %s",
@@ -250,7 +251,7 @@ class AtcuTmlRequestLogPage(BasePage):
             logger.error(str(e))
             return False
 
-    def create_multiple_tickets_concurrently(self):
+    def create_multiple_tickets_concurrently(self, api):
         """Generate multiple TML tickets simultaneously and validate uniqueness."""
 
         payloads = []
@@ -311,8 +312,8 @@ class AtcuTmlRequestLogPage(BasePage):
                 }
             )
 
-        api = APIClient()
         token = api.tml.get_token()
+        endpoint = api.tml.build_ticket_url(GENERATE_TML_TICKET)
 
         headers = {
             "Content-Type": "application/json",
@@ -324,7 +325,7 @@ class AtcuTmlRequestLogPage(BasePage):
 
             try:
                 async with session.post(
-                    self.endpoint,
+                    endpoint,
                     json=[payload],
                     headers=headers,
                 ) as response:

@@ -2,7 +2,6 @@ import re
 
 import pytest
 from playwright.sync_api import expect
-from api import APIClient
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -240,7 +239,9 @@ class TestAtcuViewOtaBatchPage:
                 f"Expected row {row_index + 1} actions {expected_buttons}, got {actual_buttons}"
             )
 
-    def test_ota_batch_page_view_action_opens_batch_page(self, atcu_ota_page, report_case):
+    def test_ota_batch_page_view_action_opens_batch_page(
+        self, atcu_ota_page, api, report_case
+    ):
         """Verify the View action opens the selected OTA batch page."""
         from pages.common_utils import SearchHelper, TableSection
 
@@ -251,7 +252,6 @@ class TestAtcuViewOtaBatchPage:
         table_rows = table.get_table_data()
         assert table_rows, "Expected OTA batch rows to be present."
 
-        api = APIClient()
         _, batch_ids = api.ota.get_ota_batch_list()
         assert batch_ids is not None and len(batch_ids) > 0, "Expected at least one batch ID from API."
 
