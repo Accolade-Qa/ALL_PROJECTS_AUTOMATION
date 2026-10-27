@@ -97,8 +97,8 @@ ICCID = _get_test_data("ICCID")
 TICKET_BASE_URL = _get(
     "TICKET_BASE_URL", "https://aepl-tcu4g-qa.accoladeelectronics.com:6109"
 )
-TICKET_USERNAME = _get("TICKET_USERNAME", _get("APP_USERNAME"))
-TICKET_PASSWORD = _get("TICKET_PASSWORD", _get("APP_PASSWORD"))
+TICKET_USERNAME = _get("TICKET_USERNAME")
+TICKET_PASSWORD = _get("TICKET_PASSWORD")
 BROWSER = _get("BROWSER", "chromium")
 HEADLESS = _get_bool("HEADLESS", True)
 SCREENSHOT_ON_FAILURE = _get_bool("SCREENSHOT_ON_FAILURE", True)

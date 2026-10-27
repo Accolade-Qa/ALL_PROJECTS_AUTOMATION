@@ -17,6 +17,26 @@ class TmlRequestAPI:
         self._client = client
         self.ticket_token = None
 
+    @staticmethod
+    def _raise_for_failed_response(response, operation):
+        if response.ok:
+            return
+
+        try:
+            response_data = response.json()
+        except ValueError:
+            response_data = {}
+
+        message = (
+            response_data.get("message")
+            if isinstance(response_data, dict)
+            else None
+        )
+        details = f": {message}" if message else ""
+        raise RuntimeError(
+            f"{operation} failed [{response.status_code}]{details}"
+        )
+
     @property
     def ticket_base_url(self):
         from config import config
@@ -33,11 +53,24 @@ class TmlRequestAPI:
 
         from config import config
         url = f"{self.ticket_base_url}{GENERATE_TICKET_TOKEN}"
-        username = getattr(config, "TICKET_USERNAME", getattr(config, "APP_USERNAME", ""))
-        password = getattr(config, "TICKET_PASSWORD", getattr(config, "APP_PASSWORD", ""))
+        username = getattr(config, "TICKET_USERNAME", "")
+        password = getattr(config, "TICKET_PASSWORD", "")
+        if not username or not password:
+            raise RuntimeError(
+                "TML ticket credentials are not configured. Set "
+                "TICKET_USERNAME and TICKET_PASSWORD in the environment."
+            )
 
         response = self._client.session.post(url, data={"username": username, "password": password}, timeout=20)
+        self._raise_for_failed_response(response, "TML ticket token request")
+
         token = response.json().get("token")
+        if not token:
+            raise RuntimeError(
+                f"TML ticket token request failed [{response.status_code}]: "
+                "response did not contain a token"
+            )
+
         self.ticket_token = token
         return token
 
@@ -95,7 +128,8 @@ class TmlRequestAPI:
         url = f"{self.ticket_base_url}{GENERATE_TML_TICKET}"
         headers = {"token": token, "Content-Type": "application/json"}
         response = self._client.session.post(url, json=payload, headers=headers, timeout=25)
-        res_json = response.json() if response.ok else {}
+        self._raise_for_failed_response(response, "TML ticket request")
+        res_json = response.json()
         data_list = res_json.get("data", [])
         data = data_list[0] if (isinstance(data_list, list) and len(data_list) > 0) else (data_list if isinstance(data_list, dict) else {})
 
