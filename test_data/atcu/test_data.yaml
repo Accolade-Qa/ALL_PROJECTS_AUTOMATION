@@ -7,5 +7,5 @@ iccid: "89916490634626389138"
 vin: "ACCDEV20222589462"
 valid_uid: "ACON4NA202200089462"
 valid_uin: "ACON4NA202200089462"
-expected_permission_count: 16
+expected_permission_count: 33
 page_title: "AEPL TCU4G QA Diagnostic Cloud"

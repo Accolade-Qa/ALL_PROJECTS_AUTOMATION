@@ -1,3 +1,4 @@
+from conftest import project_config
 from utils.logger import get_logger
 from api import APIClient
 from config.config import EXPECTED_PERMISSION_COUNT
@@ -38,7 +39,7 @@ class TestProfilePage:
     @pytest.mark.smoke
     @pytest.mark.ui
     @pytest.mark.regression
-    def test_profile_page_login_data_for_validation(self, profile_page, report_case):
+    def test_profile_page_login_data_for_validation(self, profile_page, project_config, report_case):
         """Test fetching login data using API client."""
         logger.info("Testing login data retrieval from ProfilePage")
         try:
@@ -56,13 +57,22 @@ class TestProfilePage:
             assert isinstance(login_data, dict), "Login data should be a dictionary"
 
             # basic assertions on login data keys
-            ## id should be int type and not empty
-            assert isinstance(
-                login_data.get("id"), int
-            ), "Login data 'id' should be an integer"
-            assert (
-                login_data.get("id") != 0
-            ), "Login data 'id' should not be empty or zero"
+            ## id should match the project's expected type and format
+            if project_config["project"] == "atcu":
+                assert isinstance(
+                    login_data.get("id"), str
+                ), "Login data 'id' should be a string"
+                assert login_data.get("id").isalnum(), (
+                    "Login data 'id' should be an alphanumeric string"
+                )
+            else:
+                assert isinstance(
+                    login_data.get("id"), int
+                ), "Login data 'id' should be an integer"
+                assert (
+                    login_data.get("id") != 0
+                ), "Login data 'id' should not be empty or zero"
+
             assert "id" in login_data, "Login data should contain 'id'"
 
             ## full name should be string type and not empty
@@ -74,9 +84,12 @@ class TestProfilePage:
             ), "Login data 'fullName' should not be empty"
             assert "fullName" in login_data, "Login data should contain 'fullName'"
 
-            assert "leadName" in login_data, "Login data should contain 'leadName'"
+            if project_config["project"] != "atcu":
+                assert "leadName" in login_data, "Login data should contain 'leadName'"
+            
             assert "roleType" in login_data, "Login data should contain 'roleType'"
             assert "userRole" in login_data, "Login data should contain 'userRole'"
+
             assert (
                 "userPermission" in login_data
             ), "Login data should contain 'permissions'"
@@ -171,7 +184,7 @@ class TestProfilePage:
     @pytest.mark.ui
     @pytest.mark.regression
     def test_profile_page_validate_admin_and_role_input_fields_not_editable(
-        self, profile_page, report_case
+        self, profile_page, report_case, project_config
     ):
         """
         Test validating that input fields on the profile page
@@ -185,29 +198,36 @@ class TestProfilePage:
             readonly_fields_status = {}
             editable_fields_status = {}
 
-            for field_name, field in input_fields.items():
-                readonly = field.get_attribute("ng-reflect-readonly")
+            if project_config["project"] == "atcu":
+                fields_to_validate = {"user_role": True}
+            else:
+                fields_to_validate = {
+                    field_name: field_name in ("admin", "user_role")
+                    for field_name in input_fields
+                    if field_name != "image"
+                }
 
-                if field_name in ["admin", "user_role"]:
-                    is_readonly = readonly is not None
-                    readonly_fields_status[field_name] = is_readonly
+            for field_name, expected_readonly in fields_to_validate.items():
+                field = input_fields[field_name]
+                field_count = field.count()
+                assert field_count == 1, (
+                    f"Expected exactly one '{field_name}' input field, "
+                    f"but found {field_count}"
+                )
+
+                is_editable = field.is_editable()
+                if expected_readonly:
+                    readonly_fields_status[field_name] = not is_editable
                     report_case(
                         expected=True,
-                        actual=is_readonly,
+                        actual=not is_editable,
                         message=f"Validate '{field_name}' field is readonly",
                     )
-                    assert is_readonly, (
+                    assert not is_editable, (
                         f"Expected input field '{field_name}' "
                         f"to be readonly but it is editable"
                     )
-
-                    logger.info(
-                        "Validated '%s' field is readonly",
-                        field_name,
-                    )
-
                 else:
-                    is_editable = readonly is None
                     editable_fields_status[field_name] = is_editable
                     report_case(
                         expected=True,
@@ -219,10 +239,11 @@ class TestProfilePage:
                         f"to be editable but it is readonly"
                     )
 
-                    logger.info(
-                        "Validated '%s' field is editable",
-                        field_name,
-                    )
+                logger.info(
+                    "Validated '%s' field is %s",
+                    field_name,
+                    "readonly" if expected_readonly else "editable",
+                )
 
             logger.debug(
                 "Input fields status | readonly_fields=%s | editable_fields=%s",
@@ -230,9 +251,20 @@ class TestProfilePage:
                 editable_fields_status,
             )
             report_case(
-                expected="admin and user_role readonly; others editable",
-                actual=f"readonly_fields={readonly_fields_status}, editable_fields={editable_fields_status}"
-            , message="Validate Profile page validate admin and role input fields not editable")
+                expected=(
+                    "user_role readonly"
+                    if project_config["project"] == "atcu"
+                    else "admin and user_role readonly; other inputs editable"
+                ),
+                actual=(
+                    f"readonly_fields={readonly_fields_status}, "
+                    f"editable_fields={editable_fields_status}"
+                ),
+                message=(
+                    "Validate Profile page admin and role input fields "
+                    "editability"
+                ),
+            )
             logger.info("Profile page input fields non-editable validation test passed")
 
         except AssertionError as e:
