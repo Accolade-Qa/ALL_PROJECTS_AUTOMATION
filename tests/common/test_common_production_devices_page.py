@@ -13,8 +13,9 @@ TEST_DATA_DIR_PROD = Path(__file__).resolve().parents[2] / "test_data" / "lct"
 @pytest.mark.production
 @pytest.mark.common
 @pytest.mark.regression
+@pytest.mark.lct
+@pytest.mark.sampark
 class TestProductionDevicesPage:
-
     @pytest.fixture(autouse=True)
     def log_test_case(self, request):
         test_name = request.node.name
