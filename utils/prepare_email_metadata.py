@@ -254,7 +254,7 @@ def build_html_email(projects, status, actor, run_number, ref, sha, passed, fail
     status_text = "PASSED" if status == "PASS" else "FAILED"
     status_badge_icon = "✓" if status == "PASS" else "✗"
     
-    github_repository = os.getenv('GITHUB_REPOSITORY', 'Accolade-Qa/LCT_A4G_AUTO')
+    github_repository = os.getenv('GITHUB_REPOSITORY', 'Accolade-Qa/ALL_PROJECTS_AUTOMATION')
     
     # Dynamic metric colors
     failed_metric_color = "#ef4444" if failed > 0 else "#64748b"
@@ -482,4 +482,3 @@ if __name__ == "__main__":
             with open(output_path, "w", encoding="utf-8") as f:
                 f.write(f"<html><body><h2>CI/CD Execution Summary</h2><p>Error generating report metadata: {e}</p></body></html>")
             print(f"Generated fallback HTML email body at: {output_path.resolve()}")
-

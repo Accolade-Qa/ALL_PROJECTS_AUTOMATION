@@ -26,7 +26,7 @@ def parse_args():
     )
     parser.add_argument(
         "--workflow",
-        default="reporting.yml",
+        default="test-and-report.yml",
         help="Workflow file name or path to trigger when using workflow_dispatch.",
     )
     return parser.parse_args()

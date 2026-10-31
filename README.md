@@ -1,11 +1,11 @@
-# LCT-A4G Automation Testing Framework demo
+# ALL_PROJECTS_AUTOMATION
 
 [![Playwright](https://img.shields.io/badge/Playwright-45ba4b?style=for-the-badge&logo=playwright&logoColor=white)](https://playwright.dev/)
 [![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![pytest](https://img.shields.io/badge/pytest-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)](https://pytest.org/)
 [![Allure](https://img.shields.io/badge/Allure-FF6B35?style=for-the-badge&logo=allure&logoColor=white)](https://docs.qameta.io/allure/)
 
-A Playwright + pytest automation stack that drives the LCT-A4G Device Dashboard and captures actionable test artifacts for both local experimentation and CI pipelines.
+A multi-project Playwright + pytest automation framework for ATCU, LCT, and Sampark, with actionable test artifacts for local runs and CI pipelines.
 
 ## Overview
 
@@ -24,14 +24,14 @@ A Playwright + pytest automation stack that drives the LCT-A4G Device Dashboard 
 
 1. **Clone the repository**
    ```bash
-git clone <repository-url>
-cd LCT_A4G_AUTO
+git clone https://github.com/Accolade-Qa/ALL_PROJECTS_AUTOMATION.git
+cd ALL_PROJECTS_AUTOMATION
 ```
 2. **Create a virtual environment**
    ```bash
 python -m venv .venv
 
-(Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned) ; (& d:\AEPL_AUTOMATION\LCT_A4G_AUTO\.venv\Scripts\Activate.ps1)
+.venv\Scripts\Activate.ps1
 ```
 3. **Activate the virtual environment**
    ```bash
@@ -201,7 +201,7 @@ pytest --tracing=retain-on-failure
   - `reports/json/report.json` (JSON)
   - `reports/excel/pytest-results.xlsx` (Excel) via pandas transformation
 
-Set `SUITE_NAME` in your environment to customize report prefixes (default `LCT_A4G_AUTO`). Include the generated HTML/Excel when sharing results.
+Include the generated HTML and Excel reports when sharing results.
 
 ## Development notes
 
@@ -236,7 +236,7 @@ Remove-Item -Recurse -Force screenshots/ videos/ reports/ .pytest_cache/
 
 ## CI reporting
 
-A GitHub Actions workflow (`.github/workflows/reporting.yml`) runs `scripts/generate_reports.py` on every push to `master` and every day at 10:00 UTC on `develop`. The job uses `dawidd6/action-send-mail` to email the HTML/Excel payloads; configure the repository secrets `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_TO`, and `MAIL_FROM`. Subject lines include the branch name so recipients can identify manual vs. scheduled runs.
+The [`.github/workflows/test-and-report.yml`](.github/workflows/test-and-report.yml) workflow runs on pushes to `master`, on its configured schedule, and on manual or repository dispatch. It generates per-project reports and emails them; configure the repository secrets `MAIL_USERNAME`, `MAIL_PASSWORD`, `TEST_MAIL_TO`, and `MAIL_FROM`.
 
 ## License
 

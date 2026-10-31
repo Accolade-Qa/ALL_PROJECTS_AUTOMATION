@@ -146,8 +146,8 @@ pytest -m regression -v --log-cli-level=DEBUG
 .\.venv\Scripts\python utils\generate_reports.py --project lct --markers smoke ui
 
 # Trigger GitHub Actions workflow for a specific project with test markers
-python utils/trigger_project_report.py --owner Accolade-Qa --repo LCT_A4G_AUTO --token YOUR_TOKEN --project lct --marker smoke, ui
-python utils/trigger_project_report.py --owner Accolade-Qa --repo LCT_A4G_AUTO --token YOUR_TOKEN --project lct --marker "smoke or ui"
+python utils/trigger_project_report.py --owner Accolade-Qa --repo ALL_PROJECTS_AUTOMATION --token YOUR_TOKEN --project lct --marker smoke, ui
+python utils/trigger_project_report.py --owner Accolade-Qa --repo ALL_PROJECTS_AUTOMATION --token YOUR_TOKEN --project lct --marker "smoke or ui"
 
 # Generate report from existing JSON without running pytest
 .\.venv\Scripts\python utils\generate_reports.py --project atcu --skip-pytest
@@ -488,7 +488,7 @@ Run `lct` smoke tests:
 curl -X POST \
   -H "Authorization: token $GITHUB_TOKEN" \
   -H "Accept: application/vnd.github+json" \
-  https://api.github.com/repos/Accolade-Qa/LCT_A4G_AUTO/dispatches \
+  https://api.github.com/repos/Accolade-Qa/ALL_PROJECTS_AUTOMATION/dispatches \
   -d '{
     "event_type": "run-project-report",
     "client_payload": {
@@ -507,7 +507,7 @@ Run `atcu` and `lct` smoke tests:
 curl -X POST \
   -H "Authorization: token $GITHUB_TOKEN" \
   -H "Accept: application/vnd.github+json" \
-  https://api.github.com/repos/Accolade-Qa/LCT_A4G_AUTO/dispatches \
+  https://api.github.com/repos/Accolade-Qa/ALL_PROJECTS_AUTOMATION/dispatches \
   -d '{
     "event_type": "run-project-report",
     "client_payload": {
@@ -526,7 +526,7 @@ Run regression across all configured projects:
 curl -X POST \
   -H "Authorization: token $GITHUB_TOKEN" \
   -H "Accept: application/vnd.github+json" \
-  https://api.github.com/repos/Accolade-Qa/LCT_A4G_AUTO/dispatches \
+  https://api.github.com/repos/Accolade-Qa/ALL_PROJECTS_AUTOMATION/dispatches \
   -d '{
     "event_type": "run-project-report",
     "client_payload": {
@@ -544,7 +544,7 @@ If the workflow file exists on `atcu`, target that branch explicitly:
 curl -X POST \
   -H "Authorization: token $GITHUB_TOKEN" \
   -H "Accept: application/vnd.github+json" \
-  https://api.github.com/repos/Accolade-Qa/LCT_A4G_AUTO/actions/workflows/reporting.yml/dispatches \
+  https://api.github.com/repos/Accolade-Qa/ALL_PROJECTS_AUTOMATION/actions/workflows/test-and-report.yml/dispatches \
   -d '{
     "ref": "atcu",
     "inputs": {
@@ -569,22 +569,22 @@ Passing the `--ref <branch_name>` parameter tells the script to trigger `workflo
 | :--- | :---: | :--- |
 | `--ref` | **Yes for custom branch** | Target Git branch or tag name (e.g., `atcu`, `main`, `feature/my-branch`) |
 | `--owner` | Yes | GitHub repository owner (e.g., `Accolade-Qa`) |
-| `--repo` | Yes | GitHub repository name (e.g., `LCT_A4G_AUTO`) |
+| `--repo` | Yes | GitHub repository name (e.g., `ALL_PROJECTS_AUTOMATION`) |
 | `--token` | Yes | GitHub Personal Access Token (PAT) with `repo` permissions |
 | `--project` | Optional | Target project name (e.g., `atcu`, `lct`) |
 | `--marker` | Optional | Pytest marker expression (e.g., `smoke`, `regression`, `ui`) |
-| `--workflow` | Optional | Workflow file name (defaults to `reporting.yml`) |
+| `--workflow` | Optional | Workflow file name (defaults to `test-and-report.yml`) |
 
 ##### PowerShell Examples (Windows):
 
 - Trigger on the `atcu` branch:
   ```powershell
-  python utils/trigger_project_report.py --owner Accolade-Qa --repo LCT_A4G_AUTO --token "YOUR_GITHUB_TOKEN" --project atcu --marker smoke --ref atcu
+  python utils/trigger_project_report.py --owner Accolade-Qa --repo ALL_PROJECTS_AUTOMATION --token "YOUR_GITHUB_TOKEN" --project atcu --marker smoke --ref atcu
   ```
 
 - Trigger on a feature branch (e.g., `feature/ticket-dashboard-fix`):
   ```powershell
-  python utils/trigger_project_report.py --owner Accolade-Qa --repo LCT_A4G_AUTO --token "YOUR_GITHUB_TOKEN" --project atcu --marker smoke --ref feature/ticket-dashboard-fix
+  python utils/trigger_project_report.py --owner Accolade-Qa --repo ALL_PROJECTS_AUTOMATION --token "YOUR_GITHUB_TOKEN" --project atcu --marker smoke --ref feature/ticket-dashboard-fix
   ```
 
 ##### Bash Examples (Linux/macOS):
@@ -593,7 +593,7 @@ Passing the `--ref <branch_name>` parameter tells the script to trigger `workflo
   ```bash
   python utils/trigger_project_report.py \
     --owner Accolade-Qa \
-    --repo LCT_A4G_AUTO \
+    --repo ALL_PROJECTS_AUTOMATION \
     --token "$GITHUB_TOKEN" \
     --project lct \
     --marker smoke
@@ -603,7 +603,7 @@ Passing the `--ref <branch_name>` parameter tells the script to trigger `workflo
   ```bash
   python utils/trigger_project_report.py \
     --owner Accolade-Qa \
-    --repo LCT_A4G_AUTO \
+    --repo ALL_PROJECTS_AUTOMATION \
     --token "$GITHUB_TOKEN" \
     --project atcu \
     --marker smoke \
