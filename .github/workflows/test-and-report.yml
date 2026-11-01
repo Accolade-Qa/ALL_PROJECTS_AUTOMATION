@@ -29,19 +29,57 @@ on:
       - run-project-report
 
 jobs:
+  project_matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.set-matrix.outputs.projects }}
+    steps:
+      - name: Select projects
+        id: set-matrix
+        env:
+          DISPATCH_PROJECT: ${{ github.event.client_payload.project || github.event.inputs.project || '' }}
+          DISPATCH_PROJECTS: ${{ github.event.client_payload.projects || github.event.inputs.projects || '' }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+
+          available_projects = {"atcu", "lct", "sampark"}
+          requested_projects = os.environ.get("DISPATCH_PROJECTS", "").strip()
+          requested_project = os.environ.get("DISPATCH_PROJECT", "").strip()
+          if requested_projects and requested_project:
+              raise SystemExit("Specify either project or projects, not both")
+          requested = requested_projects or requested_project
+
+          if requested:
+              projects = list(dict.fromkeys(
+                  project.strip().lower()
+                  for project in requested.split(",")
+                  if project.strip()
+              ))
+              invalid_projects = sorted(set(projects) - available_projects)
+              if not projects or invalid_projects:
+                  raise SystemExit(
+                      f"Invalid project selection: {', '.join(invalid_projects) or requested}"
+                  )
+          else:
+              projects = ["atcu", "sampark", "lct"]
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"projects={json.dumps(projects, separators=(',', ':'))}\n")
+          print(f"Selected project jobs: {', '.join(projects)}")
+          PY
+
   test-and-report:
     name: Test & Report (${{ matrix.project }})
     runs-on: ubuntu-latest
+    needs: project_matrix
     strategy:
       fail-fast: false
       matrix:
-        project: [atcu, sampark, lct]
+        project: ${{ fromJSON(needs.project_matrix.outputs.projects) }}
     env:
       HEADLESS: 'true'
-      PROJECT_INPUT: ${{ github.event.inputs.project }}
-      PROJECTS_INPUT: ${{ github.event.inputs.projects }}
-      MARKER_INPUT: ${{ github.event.inputs.marker }}
-      REPORT_DIR_INPUT: ${{ github.event.inputs.report_dir }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -83,19 +121,12 @@ jobs:
 
       - name: Run tests and generate reports
         continue-on-error: true
+        env:
+          EVENT_MARKER: ${{ github.event.client_payload.marker || github.event.inputs.marker || '' }}
+          COMMIT_MSG: ${{ github.event.head_commit.message || '' }}
         run: |
-          INPUT_PROJECT="${{ github.event.client_payload.project || github.event.inputs.project || '' }}"
           MATRIX_PROJECT="${{ matrix.project }}"
-
-          if [ -n "$INPUT_PROJECT" ] && [ "$INPUT_PROJECT" != "$MATRIX_PROJECT" ]; then
-            echo "Skipping matrix job for $MATRIX_PROJECT because dispatch explicitly requested $INPUT_PROJECT"
-            exit 0
-          fi
-
-          TARGET_PROJECT="${INPUT_PROJECT:-$MATRIX_PROJECT}"
-          EVENT_MARKER="${{ github.event.client_payload.marker || github.event.inputs.marker || '' }}"
-
-          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          TARGET_PROJECT="$MATRIX_PROJECT"
           echo "Commit Message: $COMMIT_MSG"
 
           if [ -z "$EVENT_MARKER" ] && [ -n "$COMMIT_MSG" ]; then
@@ -109,27 +140,21 @@ jobs:
           fi
 
           TARGET_REPORT_DIR="reports/$TARGET_PROJECT"
-          echo "TARGET_REPORT_DIR=$TARGET_REPORT_DIR" >> $GITHUB_ENV
+          echo "TARGET_REPORT_DIR=$TARGET_REPORT_DIR" >> "$GITHUB_ENV"
 
-          ARGS="--report-dir \"$TARGET_REPORT_DIR\" --project \"$TARGET_PROJECT\""
+          ARGS=(--report-dir "$TARGET_REPORT_DIR" --project "$TARGET_PROJECT")
 
           if [ -n "$EVENT_MARKER" ]; then
-            ARGS="$ARGS --marker \"$EVENT_MARKER\""
+            ARGS+=(--marker "$EVENT_MARKER")
           elif [ -n "$CI" ]; then
-            ARGS="$ARGS --marker smoke"
+            ARGS+=(--marker smoke)
           fi
 
-          echo "Executing: python utils/generate_reports.py $ARGS"
-          eval python utils/generate_reports.py $ARGS
+          echo "Executing report generation for $TARGET_PROJECT"
+          python utils/generate_reports.py "${ARGS[@]}"
 
       - name: Verify generated reports
         run: |
-          INPUT_PROJECT="${{ github.event.client_payload.project || github.event.inputs.project || '' }}"
-          MATRIX_PROJECT="${{ matrix.project }}"
-          if [ -n "$INPUT_PROJECT" ] && [ "$INPUT_PROJECT" != "$MATRIX_PROJECT" ]; then
-            exit 0
-          fi
-
           echo "Checking for report files in $TARGET_REPORT_DIR..."
           REPORT_FILES=$(find "$TARGET_REPORT_DIR" -type f \( -name 'report.json' -o -name 'report.html' -o -name 'report.xlsx' \) 2>/dev/null | sort)
           echo "$REPORT_FILES"
@@ -143,12 +168,6 @@ jobs:
         if: always()
         shell: bash
         run: |
-          INPUT_PROJECT="${{ github.event.client_payload.project || github.event.inputs.project || '' }}"
-          MATRIX_PROJECT="${{ matrix.project }}"
-          if [ -n "$INPUT_PROJECT" ] && [ "$INPUT_PROJECT" != "$MATRIX_PROJECT" ]; then
-            exit 0
-          fi
-
           set -e
           BASE_DIR="$TARGET_REPORT_DIR"
           if [ ! -d "$BASE_DIR" ]; then
@@ -172,19 +191,17 @@ jobs:
 
       - name: Generate Dynamic Email Body
         if: always()
+        env:
+          REPORT_ACTOR: ${{ github.triggering_actor || github.actor }}
+          REPORT_REF: ${{ github.ref_name }}
+          REPORT_SHA: ${{ github.sha }}
         run: |
-          INPUT_PROJECT="${{ github.event.client_payload.project || github.event.inputs.project || '' }}"
-          MATRIX_PROJECT="${{ matrix.project }}"
-          if [ -n "$INPUT_PROJECT" ] && [ "$INPUT_PROJECT" != "$MATRIX_PROJECT" ]; then
-            exit 0
-          fi
-
           python utils/prepare_email_metadata.py \
             --report-dir "$TARGET_REPORT_DIR" \
-            --actor "${{ github.triggering_actor || github.actor }}" \
+            --actor "$REPORT_ACTOR" \
             --run-number "${{ github.run_number }}" \
-            --ref "${{ github.ref_name }}" \
-            --sha "${{ github.sha }}"
+            --ref "$REPORT_REF" \
+            --sha "$REPORT_SHA"
 
       - name: Upload report artifacts
         if: always()

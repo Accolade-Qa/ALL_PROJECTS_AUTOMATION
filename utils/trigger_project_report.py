@@ -11,7 +11,12 @@ def parse_args():
     parser.add_argument("--owner", required=True, help="GitHub repository owner")
     parser.add_argument("--repo", required=True, help="GitHub repository name")
     parser.add_argument("--token", required=True, help="GitHub token with repo access")
-    parser.add_argument("--project", help="Target project name, e.g. lct")
+    project_group = parser.add_mutually_exclusive_group()
+    project_group.add_argument("--project", help="Target one project, e.g. lct")
+    project_group.add_argument(
+        "--projects",
+        help="Comma-separated projects to run independently, e.g. atcu,lct,sampark",
+    )
     parser.add_argument("--marker", nargs="+", help="Pytest marker expression, e.g. api or smoke")
 
     parser.add_argument(
@@ -62,7 +67,9 @@ def main():
                 "report_dir": args.report_dir,
             },
         }
-        if args.project:
+        if args.projects:
+            payload["inputs"]["projects"] = args.projects
+        elif args.project:
             payload["inputs"]["project"] = args.project
         if marker_expr:
             payload["inputs"]["marker"] = marker_expr
@@ -74,7 +81,9 @@ def main():
                 "report_dir": args.report_dir,
             },
         }
-        if args.project:
+        if args.projects:
+            payload["client_payload"]["projects"] = args.projects
+        elif args.project:
             payload["client_payload"]["project"] = args.project
         if marker_expr:
             payload["client_payload"]["marker"] = marker_expr

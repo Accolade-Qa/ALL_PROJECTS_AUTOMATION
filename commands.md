@@ -149,6 +149,12 @@ pytest -m regression -v --log-cli-level=DEBUG
 python utils/trigger_project_report.py --owner Accolade-Qa --repo ALL_PROJECTS_AUTOMATION --token YOUR_TOKEN --project lct --marker smoke, ui
 python utils/trigger_project_report.py --owner Accolade-Qa --repo ALL_PROJECTS_AUTOMATION --token YOUR_TOKEN --project lct --marker "smoke or ui"
 
+# Trigger one independent job per selected project
+python utils/trigger_project_report.py --owner Accolade-Qa --repo ALL_PROJECTS_AUTOMATION --token YOUR_TOKEN --projects atcu,lct,sampark --marker smoke
+
+# Trigger the workflow on a specific branch (replace feature/my-branch)
+python utils/trigger_project_report.py --owner Accolade-Qa --repo ALL_PROJECTS_AUTOMATION --token YOUR_TOKEN --project lct --marker smoke --ref feature/my-branch
+
 # Generate report from existing JSON without running pytest
 .\.venv\Scripts\python utils\generate_reports.py --project atcu --skip-pytest
 
@@ -400,15 +406,19 @@ When triggered, the workflow:
 
 Inputs available when run manually from GitHub:
 
-- `project`: target project name, e.g. `lct`, `atcu`
+- `project`: run only one project, e.g. `lct`
+- `projects`: comma-separated project list; each selected project runs as a separate job, e.g. `atcu,lct,sampark`
 - `marker`: pytest marker expression, e.g. `smoke`, `api`, `regression and not slow`
 - `report_dir`: destination directory for reports, default `reports`
+
+If neither `project` nor `projects` is provided, the workflow runs all configured projects as separate jobs.
 
 #### `repository_dispatch`
 
 External systems must send payload values via `client_payload`:
 
-- `project`: target project name, e.g. `lct`, `atcu`
+- `project`: run only one project, e.g. `lct`
+- `projects`: comma-separated project list; each selected project runs as a separate job, e.g. `atcu,lct,sampark`
 - `marker`: pytest marker expression
 - `report_dir`: destination directory for reports
 
@@ -571,11 +581,24 @@ Passing the `--ref <branch_name>` parameter tells the script to trigger `workflo
 | `--owner` | Yes | GitHub repository owner (e.g., `Accolade-Qa`) |
 | `--repo` | Yes | GitHub repository name (e.g., `ALL_PROJECTS_AUTOMATION`) |
 | `--token` | Yes | GitHub Personal Access Token (PAT) with `repo` permissions |
-| `--project` | Optional | Target project name (e.g., `atcu`, `lct`) |
+| `--project` | Optional | Run one project (e.g., `atcu`, `lct`) |
+| `--projects` | Optional | Run selected projects as separate jobs (comma-separated, e.g., `atcu,lct,sampark`) |
 | `--marker` | Optional | Pytest marker expression (e.g., `smoke`, `regression`, `ui`) |
 | `--workflow` | Optional | Workflow file name (defaults to `test-and-report.yml`) |
 
+Use either `--project` or `--projects`, not both. If neither is specified, all configured projects run as independent jobs.
+
 ##### PowerShell Examples (Windows):
+
+- Trigger only the `lct` project:
+  ```powershell
+  python utils/trigger_project_report.py --owner Accolade-Qa --repo ALL_PROJECTS_AUTOMATION --token "YOUR_GITHUB_TOKEN" --project lct --marker smoke
+  ```
+
+- Trigger separate jobs for `atcu`, `lct`, and `sampark`:
+  ```powershell
+  python utils/trigger_project_report.py --owner Accolade-Qa --repo ALL_PROJECTS_AUTOMATION --token "YOUR_GITHUB_TOKEN" --projects atcu,lct,sampark --marker smoke
+  ```
 
 - Trigger on the `atcu` branch:
   ```powershell
@@ -614,7 +637,7 @@ Passing the `--ref <branch_name>` parameter tells the script to trigger `workflo
 
 - `repository_dispatch` only triggers workflows on the default branch.
 - `workflow_dispatch` can target a specific branch using `--ref`.
-- `project` and `projects` cannot be used together.
+- Use `--project` for one job or `--projects` for one job per project.
 - The GitHub token must be valid and have the correct scopes.
 - Do not share your personal token; use individual tokens or a secure service account.
 
