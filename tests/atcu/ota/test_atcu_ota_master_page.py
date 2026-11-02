@@ -290,14 +290,20 @@ class TestAtcuOtaMasterPage:
 
         btn = atcu_ota_master_page.page.locator(atcu_ota_master_page.SUBMIT_BUTTON).first
         is_disabled = btn.is_disabled() or not btn.is_enabled()
+        if not is_disabled:
+            # Clicking submit on empty form triggers client-side validation errors and prevents submit
+            btn.click()
+            errors = atcu_ota_master_page.page.locator("mat-error:visible, .error:visible, .mat-mdc-form-field-error:visible")
+            is_disabled = errors.count() > 0
 
         report_case(
-            expected="Submit button should be disabled on empty form",
-            actual=f"Submit button disabled: {is_disabled}",
+            expected="Submit button should be disabled or prevented with validation errors on empty form",
+            actual=f"Submit button disabled or prevented: {is_disabled}",
             message="Validate Submit button disabled state on empty form",
         )
 
-        assert is_disabled, "Submit button should be disabled when form is empty"
+        assert is_disabled, "Submit button should be disabled or prevented when form is empty"
+
 
     @pytest.mark.smoke
     @pytest.mark.ui

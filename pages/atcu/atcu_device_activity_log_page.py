@@ -152,7 +152,7 @@ class AtcuDeviceActivityLogPage(BasePage):
     def is_imei_present_in_table(self, imei, timeout=10000):
         logger.info("Checking if IMEI '%s' is present in table", imei)
         try:
-            row_locator = self.page.locator(f"//tr[td[contains(text(), '{imei}')]]")
+            row_locator = self.page.locator(f"//tr[td[contains(., '{imei}')]]").first
             row_locator.wait_for(state="visible", timeout=timeout)
             is_vis = row_locator.is_visible()
             logger.info("IMEI '%s' present in table: %s", imei, is_vis)

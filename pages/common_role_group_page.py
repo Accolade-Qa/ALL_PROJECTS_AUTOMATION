@@ -28,13 +28,13 @@ class RoleGroupPage:
     def is_page_loaded(self):
         logger.debug("Checking if Role Group page is loaded")
         return (
-            self.page.url.endswith("/role-group")
+            (self.page.url.endswith("/role-group") or "/group-management" in self.page.url)
             and self.page.locator(".page-title").is_visible()
         )
 
     def is_add_group_button_visible(self):
         logger.debug("Checking visibility of Add Group button")
-        add_group = self.page.locator("button[class='primary-button ng-star-inserted']")
+        add_group = self.page.locator("button.primary-button, button:has-text('Add Group'), button[class*='primary-button']").first
         return add_group.is_visible()
 
     def is_role_group_table_visible(self):
@@ -75,9 +75,13 @@ class RoleGroupPage:
     def get_success_message(self):
         logger.info("Waiting for success snackbar message")
         logger.debug("Locating snackbar container")
-        snackbar = self.page.locator(".mat-mdc-snack-bar-container")
+        role_added_snackbar = self.page.locator(".mat-mdc-snack-bar-container:has-text('Role Group Added')")
+        if role_added_snackbar.count() > 0:
+            snackbar = role_added_snackbar.first
+        else:
+            snackbar = self.page.locator(".mat-mdc-snack-bar-container").last
         logger.debug("Waiting for snackbar to be visible")
-        snackbar.wait_for(state="visible")
+        snackbar.wait_for(state="visible", timeout=10000)
         logger.debug("Extracting snackbar message text")
         message = snackbar.inner_text().strip()
         logger.info("Snackbar message: %s", message)
@@ -97,7 +101,7 @@ class RoleGroupPage:
         locator.wait_for(state="visible")
         title = locator.text_content()
         logger.info("Component title found: %s", title)
-        return title
+        return title.strip()
 
     def get_input_box_error_message(self):
         logger.info("Retrieving input box error message")

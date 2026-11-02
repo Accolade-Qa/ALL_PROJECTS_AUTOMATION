@@ -33,7 +33,7 @@ class AtcuGovtServerPage(BasePage):
     PORT1_INPUT = "input[formcontrolname='port1']"
     GOVT_IP2_INPUT = "input[formcontrolname='govtIp2']"
     PORT2_INPUT = "input[formcontrolname='port2']"
-    SUBMIT_BTN = "button.submit-button"
+    SUBMIT_BTN = "button.submit-button:has-text('Submit'), button[type='submit']:has-text('Submit'), button:has-text('Submit')"
 
     def __init__(self, page):
         super().__init__(page)
@@ -84,6 +84,14 @@ class AtcuGovtServerPage(BasePage):
         logger.info("Clicking Reload button")
         self.page.locator(self.RELOAD_BTN).click()
         self.page.wait_for_load_state("networkidle")
+
+    def get_toast_message(self, timeout=5000):
+        try:
+            toast = self.page.locator(self.TOAST_MESSAGE).first
+            toast.wait_for(state="visible", timeout=timeout)
+            return toast.text_content().strip()
+        except Exception:
+            return ""
 
     def is_add_govt_server_button_visible(self):
         logger.info("Checking visibility of Add Government server button")
@@ -325,14 +333,14 @@ class AtcuGovtServerPage(BasePage):
 
     def is_submit_button_enabled(self):
         try:
-            btn = self.page.locator(self.SUBMIT_BTN)
+            btn = self.page.locator(self.SUBMIT_BTN).first
             return btn.is_enabled()
         except Exception:
             return False
 
     def click_submit_button(self):
         logger.info("Clicking Submit button on Add Government Server form")
-        btn = self.page.locator(self.SUBMIT_BTN)
+        btn = self.page.locator(self.SUBMIT_BTN).first
         btn.wait_for(state="visible", timeout=5000)
         self.is_submit_button_enabled()  # Ensure the button is enabled before clicking
         btn.click()

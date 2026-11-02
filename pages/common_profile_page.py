@@ -56,10 +56,10 @@ class ProfilePage(BasePage):
             "admin": self.page.locator("input[formcontrolname='adminName']"),
             "name": self.page.locator("input[formcontrolname='firstName']"),
             "surname": self.page.locator("input[formcontrolname='lastName']"),
-            "email": self.page.locator("input[formcontrolname='userEmail']"),
+            "email": self.page.locator("input[formcontrolname='userEmail'], input[formcontrolname='customerEmail']").first,
             "mobile": self.page.locator("input[formcontrolname='mobileNumber']"),
             "country": self.page.locator("input[formcontrolname='country']"),
-            "state": self.page.locator("input[formcontrolname='state']"),
+            "state": self.page.locator("input[formcontrolname='state'], input[formcontrolname='addressState']").first,
             "user_role": self.page.locator("input[formcontrolname='userRole']"),
-            "image": self.page.locator("img[alt='Profile Picture']"),
+            "image": self.page.locator("img[alt*='Profil'], div.image-section img, img[alt='Profile Picture']").first,
         }

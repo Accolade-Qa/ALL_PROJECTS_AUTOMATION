@@ -792,11 +792,12 @@ class AtcuOtaPage(BasePage):
     def get_ota_batch_page_header_component_buttons(self):
         logger.debug("Retrieving buttons from OTA Batch page header component")
         try:
-            header_buttons = self.page.locator("div.page-header button").all()
+            header_buttons = self.page.locator("div.page-header button:visible").all()
             button_texts = {}
             for btn in header_buttons:
-            # extract text, is_visible, is_enabled, is_disabled, router_link from the button element
                 text = btn.inner_text().strip()
+                if not text:
+                    continue
                 is_visible = btn.is_visible()
                 is_enabled = btn.is_enabled()
                 is_disabled = btn.is_disabled()
@@ -810,4 +811,4 @@ class AtcuOtaPage(BasePage):
             return button_texts
         except Exception as e:
             logger.warning("Error retrieving OTA Batch page header buttons: %s", str(e))
-            return {}   
+            return {}
