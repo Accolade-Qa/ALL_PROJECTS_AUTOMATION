@@ -147,7 +147,7 @@ jobs:
           if [ -n "$EVENT_MARKER" ]; then
             ARGS+=(--marker "$EVENT_MARKER")
           elif [ -n "$CI" ]; then
-            ARGS+=(--marker smoke)
+            # ARGS+=(--marker smoke)
           fi
 
           echo "Executing report generation for $TARGET_PROJECT"
@@ -220,7 +220,7 @@ jobs:
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
           subject: >-
-            [CI/CD Notice] Test Execution Report (${{ matrix.project }}): ${{ github.repository }} | Branch: ${{ github.ref_name }} (Run #${{ github.run_number }})
+            Test Execution Report (${{ matrix.project }}): ${{ github.repository }} | Branch: ${{ github.ref_name }} (Run #${{ github.run_number }})
           html_body: file://email_body.html
           to: ${{ secrets.MAIL_TO }}
           from: ${{ secrets.MAIL_FROM }}

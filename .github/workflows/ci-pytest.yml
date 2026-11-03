@@ -45,4 +45,4 @@ jobs:
 
       - name: Run fast pytest check
         run: |
-          pytest --maxfail=1 --disable-warnings -q -m smoke --project "${{ matrix.project }}"
+          pytest --maxfail=1 --disable-warnings --project "${{ matrix.project }}"
